@@ -1,52 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
-  <title>Panel de gestión | Amazonia Verde</title>
-  <link rel="stylesheet" href="css/style.css">
-</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Panel de administración | Amazonia Verde</title><link rel="stylesheet" href="css/admin.css"></head>
 <body>
-  <header class="header">
-    <div class="marca">
-      <img class="logo-imagen logo-header" src="img/logo-amazonia-verde.jpg" alt="Logo de Amazonia Verde">
-      <div>
-        <p class="marca-kicker">Amazonia Verde</p>
-        <h1>Panel de gestión</h1>
-      </div>
-    </div>
-    <div class="header-acciones">
-      <a href="index.html" class="btn-link">Ver tienda</a>
-      <button id="btnSalir" class="btn-carrito oculto">Cerrar sesión</button>
-    </div>
-  </header>
-
-  <main class="contenedor admin-main">
-    <section id="login" class="caja oculto login-card">
-      <p class="eyebrow">Acceso privado</p>
-      <h2>Iniciar sesión</h2>
-      <p class="ayuda">Administra tus categorías, variedades, precios y stock.</p>
-      <form id="formLogin">
-        <label>Correo <input type="email" id="email" required></label>
-        <label>Contraseña <input type="password" id="password" required></label>
-        <button type="submit">Entrar al panel</button>
-        <p id="msgLogin" class="error"></p>
-      </form>
-    </section>
-
-    <section id="panel" class="oculto">
-      <nav id="migas" class="migas"></nav>
-      <p class="eyebrow">Administración</p>
-      <h2 id="titulo"></h2>
-      <p id="ayuda" class="ayuda"></p>
-      <form id="formulario" class="caja"></form>
-      <div id="lista"></div>
-    </section>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script>
-  <script src="js/admin.js"></script>
-</body>
-</html>
+<header class="admin-header"><a href="index.html" class="admin-brand"><img src="img/logo-amazonia-verde.jpg" alt=""><span>Amazonia Verde<small>Panel de administración</small></span></a><div class="admin-actions"><span class="notification">♟ <b>3</b></span><a href="index.html" class="btn-link">Ver tienda ↗</a><button id="btnSalir" class="btn-carrito oculto">Cerrar sesión</button></div></header>
+<div class="admin-shell"><aside class="admin-sidebar"><nav><a class="active" href="#dashboard">⌂ <span>Dashboard<small>Resumen general</small></span></a><a href="#productos">▣ <span>Productos<small>Gestionar plantas</small></span></a><a href="#categorias">▦ <span>Categorías<small>Organizar catálogo</small></span></a><a href="#pedidos">🛒 <span>Pedidos<small>Ver y procesar</small></span></a><a href="#clientes">♟ <span>Clientes<small>Base de clientes</small></span></a><a href="#inventario">▣ <span>Inventario<small>Control de stock</small></span></a><a href="#envios">🚚 <span>Envíos<small>Cobertura nacional</small></span></a><a href="#configuracion">⚙ <span>Configuración<small>Ajustes de la tienda</small></span></a></nav><div class="side-card"><b>Amazonia Verde</b><p>Cultivamos vida,<br>compartimos naturaleza.</p></div></aside>
+<main class="admin-main"><section id="login" class="admin-card login-card oculto"><small class="eyebrow">Acceso privado</small><h1>Iniciar sesión</h1><p>Administra tus categorías, variedades, precios y stock.</p><form id="formLogin"><label>Correo<input type="email" id="email" required></label><label>Contraseña<input type="password" id="password" required></label><button type="submit">Entrar al panel →</button><p id="msgLogin" class="error"></p></form></section>
+<section id="panel" class="oculto"><div class="admin-welcome"><div><small class="eyebrow">Resumen general</small><h1>Panel de administración</h1><p>Gestiona tu tienda y cultiva el crecimiento de Amazonia Verde.</p></div><div class="welcome-art">🌿</div></div><div class="stats"><div>🛒<span>Ventas del día<strong>S/ 450.00</strong><small>↑ +12%</small></span></div><div>▣<span>Ventas del mes<strong>S/ 2,450.00</strong><small>↑ +18%</small></span></div><div>▤<span>Pedidos pendientes<strong>12</strong><small>Ver pedidos →</small></span></div><div>▣<span>Productos disponibles<strong>68</strong><small>Gestionar →</small></span></div></div><nav id="migas" class="migas"></nav><small class="eyebrow">Administración del catálogo</small><h2 id="titulo"></h2><p id="ayuda" class="ayuda"></p><form id="formulario" class="admin-card"></form><div id="lista"></div></section></main></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1"></script><script src="js/config.js"></script><script src="js/admin.js"></script>
+</body></html>
