@@ -266,4 +266,16 @@ lista.addEventListener("click", async (e) => {
   }
 });
 
+// Manejo de enlaces de la barra lateral
+document.querySelectorAll('.admin-sidebar nav a').forEach(link => {
+  link.onclick = (e) => {
+    document.querySelectorAll('.admin-sidebar nav a').forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+    // Si es dashboard, reseteamos ruta
+    if (link.getAttribute('href') === '#dashboard') {
+      ruta = { cat: null, tipo: null };
+      cargar();
+    }
+  };
+});
 iniciar();
