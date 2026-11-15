@@ -45,8 +45,16 @@ function esc(t) {
 // ---------- Sesión ----------
 async function iniciar() {
   const { data } = await db.auth.getSession();
-  data.session ? mostrarPanel() : mostrarLogin();
+  if (data.session) {
+    mostrarPanel();
+    // Actualizar contadores del dashboard
+    const productos = await db.from('variedades').select('*', { count: 'exact', head: true });
+    document.getElementById('count-productos').textContent = productos.count || 0;
+  } else {
+    mostrarLogin();
+  }
 }
+
 
 function mostrarLogin() {
   loginBox.classList.remove("oculto");
