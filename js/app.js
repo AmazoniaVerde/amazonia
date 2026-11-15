@@ -25,3 +25,16 @@ async function checkout(){if(!cart.length)return alert('Tu carrito está vacío.
 function router(){const raw=location.hash.slice(1)||'inicio',parts=raw.split('/');if(parts[0]==='catalogo')return parts[1]==='categorias'?categoriesView():catalogView(parts[1]||null);if(parts[0]==='producto')return detail(parts[1]);if(parts[0]==='cuidados')return cares();if(parts[0]==='nosotros')return about();if(parts[0]==='contacto')return contact();if(parts[0]==='carrito')return cartView();return home()}
 document.addEventListener('click',e=>{const a=e.target.closest('[data-add]');if(a){e.preventDefault();add(Number(a.dataset.add))}const c=e.target.closest('[data-cart], [data-drawer]');if(c){e.preventDefault();change(Number(c.dataset.cart||c.dataset.drawer),Number(c.dataset.delta))}const r=e.target.closest('[data-remove]');if(r){cart=cart.filter(x=>x.id!=Number(r.dataset.remove));saveCart();cartView()}const care=e.target.closest('[data-care]');if(care){const el=document.getElementById(`care-${care.dataset.care}`);el.hidden=!el.hidden}const q=e.target.closest('[data-qty]');if(q){const n=document.getElementById('detailQty');n.textContent=Math.max(1,Number(n.textContent)+Number(q.dataset.qty))}if(e.target.id==='checkoutButton')checkout()});
 document.getElementById('btnCarrito').onclick=openDrawer;document.getElementById('btnCerrar').onclick=closeDrawer;document.getElementById('drawerBackdrop').onclick=closeDrawer;document.getElementById('btnVaciar').onclick=()=>{cart=[];saveCart()};document.getElementById('btnPedir').onclick=checkout;document.getElementById('menuButton').onclick=()=>document.getElementById('mainNav').classList.toggle('open');document.getElementById('searchButton').onclick=()=>{location.hash='#catalogo';setTimeout(()=>document.getElementById('searchProducts')?.focus(),100)};window.addEventListener('hashchange',router);loadCatalog().then(()=>{updateCart();router()});updateCart();
+function actualizarCorreoContacto(){
+  document.querySelectorAll('a[href="mailto:ventas@amazoniaverde.pe"]').forEach(link=>{
+    link.href=`mailto:${CONTACT_EMAIL}`;
+    link.textContent=CONTACT_EMAIL;
+  });
+  document.querySelectorAll('p').forEach(parrafo=>{
+    if(parrafo.textContent.trim()==='contacto@amazoniaverde.pe'){
+      parrafo.innerHTML=`<a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>`;
+    }
+  });
+}
+const layoutOriginal=layout;
+layout=function(contenido){layoutOriginal(contenido);actualizarCorreoContacto()};
