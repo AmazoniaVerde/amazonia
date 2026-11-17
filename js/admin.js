@@ -1,289 +1,147 @@
-const loginBox  = document.getElementById("login");
-const panel     = document.getElementById("panel");
-const btnSalir  = document.getElementById("btnSalir");
-const migas     = document.getElementById("migas");
-const titulo    = document.getElementById("titulo");
-const ayuda     = document.getElementById("ayuda");
-const formulario = document.getElementById("formulario");
-const lista     = document.getElementById("lista");
-
-// Campos de cada nivel. Para agregar uno nuevo, primero crea la columna en Supabase.
-const CAMPOS = {
-  categorias: [
-    { n: "nombre", etiqueta: "Nombre", tipo: "text", req: true },
-    { n: "descripcion", etiqueta: "Descripción", tipo: "textarea" }
-  ],
-  tipos: [
-    { n: "nombre", etiqueta: "Nombre", tipo: "text", req: true },
-    { n: "descripcion", etiqueta: "Descripción", tipo: "textarea" }
-  ],
-  variedades: [
-    { n: "nombre", etiqueta: "Nombre", tipo: "text", req: true },
-    { n: "descripcion", etiqueta: "Descripción", tipo: "textarea" },
-    { n: "precio", etiqueta: "Precio", tipo: "number", defecto: 0 },
-    { n: "stock", etiqueta: "Stock (unidades)", tipo: "number", defecto: 0 },
-    { n: "luz", etiqueta: "Luz (ej. Sol directo)", tipo: "text" },
-    { n: "riego", etiqueta: "Riego (ej. Bandeja con 1–2 cm de agua)", tipo: "text" },
-    { n: "dificultad", etiqueta: "Dificultad", tipo: "select",
-      opciones: ["Fácil", "Media", "Avanzada"], defecto: "Media" },
-    { n: "visible", etiqueta: "Visible en la tienda", tipo: "checkbox" }
-  ]
+// Panel del dueño. Usa el cliente `db` y las constantes de config.js
+const sb = db;
+const $ = i => document.getElementById(i);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => `${MONEDA} ${Number(n || 0).toFixed(2)}`;
+const fecha = d => d ? new Date(d).toLocaleString('es-PE', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
+const ESTADOS = ['Pendiente', 'Confirmado', 'En camino', 'Entregado', 'Cancelado'];
+const VENDIDO = ['Confirmado', 'En camino', 'Entregado'];
+let editId = null, cur = {}, cache = {};
+// [campo, etiqueta, tipo, obligatorio]
+const FORMS = {
+  categorias: [['nombre','Nombre','text',1],['descripcion','Descripción','textarea']],
+  tipos: [['nombre','Nombre','text',1],['descripcion','Descripción','textarea']],
+  variedades: [['tipo_id','Categoría › Tipo','select',1],['nombre','Nombre','text',1],['descripcion','Descripción','textarea'],['precio','Precio','number',1],['stock','Stock','number',1],['luz','Luz','text'],['riego','Riego','text'],['altura','Altura','text'],['dificultad','Dificultad','dif'],['visible','Visible en la tienda','check'],['destacado','Más vendida (aparece en el inicio)','check']]
 };
-const SINGULAR = { categorias: "categoría", tipos: "tipo", variedades: "variedad" };
+const get = async (t, f = q => q) => { const r = await f(sb.from(t).select('*')); if (r.error) throw r.error; return r.data; };
 
-let ruta = { cat: null, tipo: null };   // dónde estamos navegando
-let registros = [];                     // lo que se muestra en la lista
-let editando = null;                    // registro que se está editando
-
-const nivelActual = () => !ruta.cat ? "categorias" : !ruta.tipo ? "tipos" : "variedades";
-
-function esc(t) {
-  return String(t ?? "").replace(/[&<>"']/g, c =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function campo([k, l, t, req], v, o) {
+  const val = v[k] ?? '';
+  if (t === 'textarea') return `<label>${l}<textarea name="${k}" rows="2">${esc(val)}</textarea></label>`;
+  if (t === 'select') return `<label>${l}<select name="${k}" required>${o.tipos.map(x => `<option value="${x.id}" ${x.id == val ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('')}</select></label>`;
+  if (t === 'dif') return `<label>${l}<select name="${k}">${['Fácil','Media','Avanzada'].map(x => `<option ${x == (val || 'Media') ? 'selected' : ''}>${x}</option>`).join('')}</select></label>`;
+  if (t === 'check') return `<label class="check"><input type="checkbox" name="${k}" ${('id' in v ? val : k === 'visible') ? 'checked' : ''}> ${l}</label>`;
+  return `<label>${l}<input name="${k}" type="${t}" ${t === 'number' ? 'step="any" min="0"' : ''} value="${esc(val)}" ${req ? 'required' : ''}></label>`;
 }
-
-// ---------- Sesión ----------
-async function iniciar() {
-  const { data } = await db.auth.getSession();
-  if (data.session) {
-    mostrarPanel();
-    // Actualizar contadores del dashboard
-    const productos = await db.from('variedades').select('*', { count: 'exact', head: true });
-    document.getElementById('count-productos').textContent = productos.count || 0;
-  } else {
-    mostrarLogin();
+function form(tbl, vals = {}, opts = {}, extra = {}) {
+  cur = {tbl, opts, extra};
+  const f = $('formulario'); f.hidden = false;
+  f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}<label>Foto (se reduce a 1000 px)<input type="file" name="foto" accept="image/*"></label>${vals.imagen_url ? `<img class="mini" src="${esc(vals.imagen_url)}" alt="">` : ''}<div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
+}
+function cab(t, a, m = '') { editId = null; $('titulo').textContent = t; $('ayuda').textContent = a; $('migas').innerHTML = m; $('formulario').hidden = true; $('lista').innerHTML = ''; }
+function filas(tbl, rows, info, extra = () => '') {
+  cache[tbl] = {}; rows.forEach(r => cache[tbl][r.id] = r);
+  $('lista').innerHTML = rows.length ? rows.map(r => `<div class="fila">${r.imagen_url ? `<img class="mini" src="${esc(r.imagen_url)}" alt="">` : '<span class="mini">🌱</span>'}<div class="fila-info">${info(r)}</div><div class="fila-botones">${extra(r)}<button class="btn-secundario" data-act="edit" data-t="${tbl}" data-id="${r.id}">Editar</button><button class="btn-peligro" data-act="del" data-t="${tbl}" data-id="${r.id}">Borrar</button></div></div>`).join('') : '<p class="ayuda">Aún no hay nada aquí. Agrega el primero con el formulario.</p>';
+}
+async function stats() {
+  const [p, v] = await Promise.all([sb.from('pedidos').select('total,estado,creado'), sb.from('variedades').select('stock,visible')]);
+  const ped = p.error ? [] : p.data, vs = v.data || [], hoy = new Date().toDateString(), mes = new Date().getMonth(), anio = new Date().getFullYear();
+  const ok = ped.filter(x => VENDIDO.includes(x.estado)), suma = a => a.reduce((s, x) => s + Number(x.total), 0);
+  const pend = ped.filter(x => x.estado === 'Pendiente').length;
+  $('count-ventas-dia').textContent = money(suma(ok.filter(x => new Date(x.creado).toDateString() === hoy)));
+  $('count-ventas-mes').textContent = money(suma(ok.filter(x => { const d = new Date(x.creado); return d.getMonth() === mes && d.getFullYear() === anio; })));
+  $('count-pendientes').textContent = pend; $('notif').textContent = pend;
+  $('count-productos').textContent = vs.filter(x => x.visible && x.stock > 0).length;
+  $('count-stock').textContent = vs.filter(x => x.stock <= 3).length;
+}
+async function subir(file) {
+  const bmp = await createImageBitmap(file), k = Math.min(1, 1000 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .82)), p = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
+  const {error} = await sb.storage.from('imagenes').upload(p, blob, {contentType: 'image/jpeg'}); if (error) throw error;
+  return sb.storage.from('imagenes').getPublicUrl(p).data.publicUrl;
+}
+const tablaPedidos = (r, editable) => r.length ? `<div class="tabla-wrap"><table class="tabla"><tr><th>N°</th><th>Cliente</th>${editable ? '<th>Detalle</th>' : ''}<th>Total</th><th>Fecha</th><th>Estado</th></tr>${r.map(p => `<tr><td>#${String(p.id).padStart(6, '0')}</td><td>${esc(p.nombre_cliente)}</td>${editable ? `<td>${(p.items || []).map(i => `${esc(i.cantidad)}× ${esc(i.nombre)}`).join(', ')}</td>` : ''}<td>${money(p.total)}</td><td>${fecha(p.creado)}</td><td>${editable ? `<select data-act="estado" data-id="${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>` : esc(p.estado)}</td></tr>`).join('')}</table></div>` : '<p class="ayuda">Aún no hay pedidos.</p>';
+const V = {
+  async dashboard() {
+    cab('Resumen general', 'Ventas (pedidos confirmados), productos más vendidos y alertas de inventario.');
+    const [pr, low] = await Promise.all([sb.from('pedidos').select('*').order('creado', {ascending: false}).limit(500), get('variedades', q => q.lte('stock', 3).order('stock').limit(6))]);
+    const ped = pr.error ? [] : pr.data, ok = ped.filter(p => VENDIDO.includes(p.estado));
+    const dias = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return d; });
+    const tot = dias.map(d => ok.filter(p => new Date(p.creado).toDateString() === d.toDateString()).reduce((s, p) => s + Number(p.total), 0)), mx = Math.max(1, ...tot);
+    const top = {}; ok.forEach(p => (p.items || []).forEach(i => top[i.nombre] = (top[i.nombre] || 0) + Number(i.cantidad || 0)));
+    const tp = Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 4), tm = tp[0]?.[1] || 1;
+    const dashboardVisual = `<section class="dashboard-visual wide">
+      <div class="dashboard-garden"><div><small class="eyebrow">Amazonia Verde</small><h2>Un panel que crece contigo</h2><p>Cuida tu catálogo, tus pedidos y el inventario desde un solo lugar.</p></div></div>
+      <div class="dashboard-banners"><a href="#productos"><img src="img/11_banner_productos.jpg" alt="Productos de la mejor calidad"></a><a href="#inventario"><img src="img/02_banner_envios_peru.jpg" alt="Envíos a todo el Perú"></a></div>
+      <div class="dashboard-quick"><a href="#productos"><img src="img/12_icono_monstera.jpg" alt=""><span><b>Productos</b><small>Gestiona tus plantas</small></span></a><a href="#pedidos"><img src="img/13_icono_caja_envio.jpg" alt=""><span><b>Pedidos</b><small>Revisa tus envíos</small></span></a><a href="#inventario"><img src="img/14_icono_calendario.jpg" alt=""><span><b>Actividad</b><small>Organiza tu día</small></span></a></div>
+    </section>`;
+    $('lista').innerHTML = `${pr.error ? '<p class="error">Falta la tabla de pedidos: ejecuta sql/03-pedidos-y-ajustes.sql en Supabase.</p>' : ''}${dashboardVisual}<div class="dash">
+    <section class="av-card"><h3>Ventas por día (7 días)</h3><div class="av-bars">${tot.map((t, i) => `<div title="${money(t)}"><i style="height:${Math.round(t / mx * 100)}%"></i>${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][dias[i].getDay()]}</div>`).join('')}</div></section>
+    <section class="av-card av-top"><h3>Productos más vendidos</h3>${tp.length ? tp.map(([n, c]) => `<div><b>${esc(n)}</b> · ${c} uds.<i style="width:${Math.round(c / tm * 100)}%"></i></div>`).join('') : '<p class="ayuda">Aún sin ventas confirmadas.</p>'}</section>
+    <section class="av-card"><h3>⚠ Alertas de inventario</h3>${low.length ? low.map(v => `<p><b>${esc(v.nombre)}</b> <span class="bajo">Stock bajo (${v.stock} uds.)</span></p>`).join('') + '<a class="btn-link" href="#inventario">Ver inventario →</a>' : '<p class="ayuda">Todo el stock está en orden 🌿</p>'}</section>
+    <section class="av-card wide"><h3>Pedidos recientes</h3>${tablaPedidos(ped.slice(0, 5), false)}<p><a class="btn-link" href="#pedidos">Ver todos →</a></p></section></div>`;
+  },
+  async pedidos() {
+    cab('Pedidos', 'Pedidos enviados desde el carrito. Cambia el estado según avances.');
+    const r = await get('pedidos', q => q.order('creado', {ascending: false}).limit(200));
+    $('lista').innerHTML = tablaPedidos(r, true);
+  },
+  async categorias() {
+    cab('Categorías', 'Crea las categorías (Carnívoras, Orquídeas…). Entra a una para crear sus tipos.');
+    form('categorias');
+    filas('categorias', await get('categorias', q => q.order('nombre')), r => `<strong>${esc(r.nombre)}</strong><br><small>${esc(r.descripcion || '')}</small>`, r => `<a class="btn-link" href="#tipos:${r.id}">Tipos ›</a>`);
+  },
+  async tipos(cid) {
+    const [c] = await get('categorias', q => q.eq('id', cid));
+    cab('Tipos de ' + (c?.nombre || ''), 'Ej.: Venus, Sarracenias. Entra a un tipo para crear sus variedades.', `<a href="#categorias">Categorías</a> › <strong>${esc(c?.nombre || '')}</strong>`);
+    form('tipos', {}, {}, {categoria_id: +cid});
+    filas('tipos', await get('tipos', q => q.eq('categoria_id', cid).order('nombre')), r => `<strong>${esc(r.nombre)}</strong><br><small>${esc(r.descripcion || '')}</small>`, r => `<a class="btn-link" href="#productos:${r.id}">Variedades ›</a>`);
+  },
+  async productos(tid) {
+    cab('Productos', 'Variedades vendibles: precio, stock, fotos y visibilidad.', tid ? '<a href="#productos">Todos los productos</a>' : '');
+    const [cs, ts] = await Promise.all([get('categorias'), get('tipos', q => q.order('nombre'))]);
+    if (!ts.length) { $('ayuda').textContent = 'Primero crea una categoría y dentro un tipo.'; return; }
+    const tn = Object.fromEntries(ts.map(t => [t.id, `${cs.find(c => c.id == t.categoria_id)?.nombre || ''} › ${t.nombre}`]));
+    form('variedades', tid ? {tipo_id: +tid} : {}, {tipos: ts.map(t => ({id: t.id, nombre: tn[t.id]}))});
+    filas('variedades', await get('variedades', q => (tid ? q.eq('tipo_id', tid) : q).order('nombre')), r => `<strong>${esc(r.nombre)}</strong>${r.destacado ? ' ⭐' : ''}<br><small>${esc(tn[r.tipo_id] || '')} · ${money(r.precio)} · Stock: <span class="${r.stock <= 3 ? 'bajo' : ''}">${r.stock}</span>${r.visible ? '' : ' · 🙈 Oculta'}</small>`, r => `<button class="btn-secundario" data-act="vis" data-id="${r.id}">${r.visible ? 'Ocultar' : 'Mostrar'}</button>`);
+  },
+  async inventario() {
+    cab('Inventario', 'Ajusta el stock de cada planta.');
+    const r = await get('variedades', q => q.order('stock'));
+    $('lista').innerHTML = r.map(v => `<div class="fila"><div class="fila-info"><strong>${esc(v.nombre)}</strong><br><small class="${v.stock <= 3 ? 'bajo' : ''}">${v.stock <= 3 ? 'Stock bajo' : 'En stock'}</small></div><div class="fila-botones"><input type="number" min="0" value="${v.stock}" id="s${v.id}" style="width:90px"><button data-act="stock" data-id="${v.id}">Guardar</button></div></div>`).join('') || '<p class="ayuda">Aún no hay productos.</p>';
   }
+};
+async function vista() {
+  const [h, id] = (location.hash.slice(1) || 'dashboard').split(':'), f = V[h] || V.dashboard;
+  document.querySelectorAll('.admin-sidebar nav a').forEach(a => a.classList.toggle('active', a.getAttribute('href').slice(1) === (h === 'tipos' ? 'categorias' : (V[h] ? h : 'dashboard'))));
+  try { await f(id); stats(); } catch (e) { console.error(e); $('lista').innerHTML = `<p class="error">${esc(e.message)}</p>`; }
 }
-
-
-function mostrarLogin() {
-  loginBox.classList.remove("oculto");
-  panel.classList.add("oculto");
-  btnSalir.classList.add("oculto");
-}
-
-function mostrarPanel() {
-  loginBox.classList.add("oculto");
-  panel.classList.remove("oculto");
-  btnSalir.classList.remove("oculto");
-  ruta = { cat: null, tipo: null };
-  cargar();
-}
-
-document.getElementById("formLogin").addEventListener("submit", async (e) => {
+$('formulario').addEventListener('submit', async e => {
   e.preventDefault();
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-  const { error } = await db.auth.signInWithPassword({ email, password });
-  if (error) {
-    document.getElementById("msgLogin").textContent = "Correo o contraseña incorrectos.";
-    return;
-  }
-  mostrarPanel();
+  const f = $('formulario'), fd = new FormData(f), msg = $('msgForm'), o = {...cur.extra};
+  msg.textContent = 'Guardando…';
+  try {
+    for (const [k,, t] of FORMS[cur.tbl]) o[k] = t === 'check' ? fd.has(k) : (t === 'number' || k === 'tipo_id') ? Number(fd.get(k) || 0) : (fd.get(k) || '').trim() || null;
+    const file = fd.get('foto'); if (file && file.size) o.imagen_url = await subir(file);
+    const {error} = editId ? await sb.from(cur.tbl).update(o).eq('id', editId) : await sb.from(cur.tbl).insert(o);
+    if (error) throw error;
+    vista();
+  } catch (err) { msg.textContent = /row-level/i.test(err.message) ? 'Sin permiso: inicia sesión con el correo del dueño.' : 'Error: ' + err.message; }
 });
-
-btnSalir.onclick = async () => { await db.auth.signOut(); mostrarLogin(); };
-
-// ---------- Cargar datos ----------
-async function cargar() {
-  const nv = nivelActual();
-  pintarMigas();
-
-  if (nv === "categorias") {
-    titulo.textContent = "Categorías";
-    ayuda.textContent = "Crea las categorías principales de tu tienda. Ej.: Carnívoras, Suculentas, Cactus.";
-  } else if (nv === "tipos") {
-    titulo.textContent = `Tipos dentro de «${ruta.cat.nombre}»`;
-    ayuda.textContent = "Agrega los tipos de esta categoría. Ej.: Venus, Sarracenias, Droseras.";
-  } else {
-    titulo.textContent = `Variedades de «${ruta.tipo.nombre}»`;
-    ayuda.textContent = "Agrega cada variedad con su precio y stock. Ej.: B52, Dentate, GJ Montecore.";
-  }
-
-  let consulta = db.from(nv).select("*").order("nombre");
-  if (nv === "tipos") consulta = consulta.eq("categoria_id", ruta.cat.id);
-  if (nv === "variedades") consulta = consulta.eq("tipo_id", ruta.tipo.id);
-
-  const { data, error } = await consulta;
-  if (error) { lista.innerHTML = `<p class="error">Error: ${esc(error.message)}</p>`; return; }
-
-  registros = data;
-  pintarFormulario(null);
-  pintarLista();
-}
-
-function pintarMigas() {
-  let html = `<a href="#" data-ir="inicio">Categorías</a>`;
-  if (ruta.cat)  html += ` › <a href="#" data-ir="cat">${esc(ruta.cat.nombre)}</a>`;
-  if (ruta.tipo) html += ` › <strong>${esc(ruta.tipo.nombre)}</strong>`;
-  migas.innerHTML = html;
-}
-
-migas.addEventListener("click", (e) => {
-  const ir = e.target.dataset.ir;
-  if (!ir) return;
-  e.preventDefault();
-  if (ir === "inicio") ruta = { cat: null, tipo: null };
-  if (ir === "cat") ruta.tipo = null;
-  cargar();
+document.addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const {act, t, id} = b.dataset;
+  if (act === 'cancel') return vista();
+  if (act === 'edit') { editId = id; form(cur.tbl, cache[t][id], cur.opts, cur.extra); return $('formulario').scrollIntoView({behavior: 'smooth'}); }
+  let r;
+  if (act === 'del') { if (!confirm(`¿Borrar «${cache[t][id].nombre}»?${t === 'variedades' ? '' : '\n\n⚠️ También se borrará todo lo que contiene.'}`)) return; r = await sb.from(t).delete().eq('id', id); }
+  if (act === 'vis') r = await sb.from('variedades').update({visible: !cache.variedades[id].visible}).eq('id', id);
+  if (act === 'stock') r = await sb.from('variedades').update({stock: Math.max(0, +$('s' + id).value || 0)}).eq('id', id);
+  if (r?.error) return alert('Error: ' + r.error.message);
+  vista();
 });
-
-// ---------- Formulario ----------
-function pintarFormulario(reg) {
-  editando = reg;
-  const nv = nivelActual();
-  const v = reg || {};
-
-  const campos = CAMPOS[nv].map(c => {
-    const valor = v[c.n] ?? c.defecto ?? "";
-    if (c.tipo === "textarea")
-      return `<label>${c.etiqueta}<textarea name="${c.n}" rows="2">${esc(valor)}</textarea></label>`;
-    if (c.tipo === "select")
-      return `<label>${c.etiqueta}<select name="${c.n}">${
-        c.opciones.map(o => `<option ${o === valor ? "selected" : ""}>${o}</option>`).join("")
-      }</select></label>`;
-    if (c.tipo === "checkbox")
-      return `<label class="check"><input type="checkbox" name="${c.n}" ${(reg ? v[c.n] : true) ? "checked" : ""}> ${c.etiqueta}</label>`;
-    return `<label>${c.etiqueta}<input type="${c.tipo}" name="${c.n}" value="${esc(valor)}"
-      ${c.req ? "required" : ""} ${c.tipo === "number" ? 'min="0" step="any"' : ""}></label>`;
-  }).join("");
-
-  formulario.innerHTML = `
-    <h3>${reg ? "Editar" : "Agregar"} ${SINGULAR[nv]}</h3>
-    ${campos}
-    <label>Foto (opcional)<input type="file" name="foto" accept="image/*"></label>
-    ${reg && reg.imagen_url ? `<img class="mini" src="${esc(reg.imagen_url)}" alt="">` : ""}
-    <div class="acciones">
-      <button type="submit">${reg ? "Guardar cambios" : "Agregar"}</button>
-      ${reg ? '<button type="button" id="btnCancelar" class="btn-secundario">Cancelar</button>' : ""}
-    </div>
-    <p id="msgForm" class="error"></p>`;
-}
-
-formulario.addEventListener("click", (e) => {
-  if (e.target.id === "btnCancelar") pintarFormulario(null);
+document.addEventListener('change', async e => {
+  const s = e.target.closest('select[data-act="estado"]'); if (!s) return;
+  const {error} = await sb.from('pedidos').update({estado: s.value}).eq('id', s.dataset.id);
+  if (error) alert('Error: ' + error.message); else stats();
 });
-
-formulario.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const nv = nivelActual();
-  const fd = new FormData(formulario);
-  const msg = document.getElementById("msgForm");
-
-  const registro = {};
-  CAMPOS[nv].forEach(c => {
-    if (c.tipo === "checkbox") registro[c.n] = formulario.elements[c.n].checked;
-    else if (c.tipo === "number") registro[c.n] = Number(fd.get(c.n) || 0);
-    else registro[c.n] = (fd.get(c.n) || "").trim();
-  });
-
-  msg.textContent = "Guardando...";
-
-  const foto = fd.get("foto");
-  if (foto && foto.size > 0) {
-    const url = await subirFoto(foto);
-    if (!url) { msg.textContent = "No se pudo subir la foto."; return; }
-    registro.imagen_url = url;
-  }
-
-  if (nv === "tipos") registro.categoria_id = ruta.cat.id;
-  if (nv === "variedades") registro.tipo_id = ruta.tipo.id;
-
-  const { error } = editando
-    ? await db.from(nv).update(registro).eq("id", editando.id)
-    : await db.from(nv).insert(registro);
-
-  if (error) { msg.textContent = "Error: " + error.message; return; }
-  cargar();
+function mostrar(ok) { $('login').classList.toggle('oculto', ok); $('panel').classList.toggle('oculto', !ok); $('btnSalir').classList.toggle('oculto', !ok); if (ok) vista(); }
+$('formLogin').addEventListener('submit', async e => {
+  e.preventDefault(); $('msgLogin').textContent = 'Entrando…';
+  const {error} = await sb.auth.signInWithPassword({email: $('email').value.trim(), password: $('password').value});
+  if (error) $('msgLogin').textContent = 'Correo o contraseña incorrectos.'; else { $('msgLogin').textContent = ''; mostrar(true); }
 });
-
-// ---------- Fotos (se reducen antes de subir para ahorrar espacio) ----------
-function reducirImagen(archivo, max = 1000) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const escala = Math.min(1, max / Math.max(img.width, img.height));
-      const c = document.createElement("canvas");
-      c.width = Math.round(img.width * escala);
-      c.height = Math.round(img.height * escala);
-      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-      c.toBlob(resolve, "image/jpeg", 0.82);
-      URL.revokeObjectURL(img.src);
-    };
-    img.onerror = () => resolve(null);
-    img.src = URL.createObjectURL(archivo);
-  });
-}
-
-async function subirFoto(archivo) {
-  const blob = await reducirImagen(archivo);
-  if (!blob) return null;
-  const nombre = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-  const { error } = await db.storage.from("imagenes").upload(nombre, blob, { contentType: "image/jpeg" });
-  if (error) { console.error(error); return null; }
-  return db.storage.from("imagenes").getPublicUrl(nombre).data.publicUrl;
-}
-
-// ---------- Lista ----------
-function pintarLista() {
-  const nv = nivelActual();
-  if (!registros.length) {
-    lista.innerHTML = `<p>Aún no hay nada aquí. Agrega el primero con el formulario de arriba.</p>`;
-    return;
-  }
-  lista.innerHTML = registros.map(d => `
-    <div class="fila">
-      ${d.imagen_url ? `<img class="mini" src="${esc(d.imagen_url)}" alt="">` : '<span class="mini">🌱</span>'}
-      <div class="fila-info">
-        <strong>${esc(d.nombre)}</strong>
-        ${nv === "variedades"
-          ? `<br><small>${MONEDA} ${d.precio} · Stock: ${d.stock}${d.visible ? "" : " · 🙈 Oculta"}</small>`
-          : ""}
-      </div>
-      <div class="fila-botones">
-        ${nv !== "variedades" ? `<button data-abrir="${d.id}">Abrir ›</button>` : ""}
-        <button data-editar="${d.id}" class="btn-secundario">Editar</button>
-        <button data-borrar="${d.id}" class="btn-peligro">Borrar</button>
-      </div>
-    </div>`).join("");
-}
-
-lista.addEventListener("click", async (e) => {
-  const nv = nivelActual();
-  const { abrir, editar, borrar } = e.target.dataset;
-
-  if (abrir) {
-    const reg = registros.find(d => d.id == abrir);
-    if (nv === "categorias") ruta.cat = { id: reg.id, nombre: reg.nombre };
-    else ruta.tipo = { id: reg.id, nombre: reg.nombre };
-    cargar();
-  }
-
-  if (editar) {
-    pintarFormulario(registros.find(d => d.id == editar));
-    formulario.scrollIntoView({ behavior: "smooth" });
-  }
-
-  if (borrar) {
-    const reg = registros.find(d => d.id == borrar);
-    const aviso = nv === "variedades" ? "" : "\n\n⚠️ También se borrará todo lo que contiene.";
-    if (!confirm(`¿Borrar «${reg.nombre}»?${aviso}`)) return;
-    const { error } = await db.from(nv).delete().eq("id", reg.id);
-    if (error) alert("Error: " + error.message);
-    cargar();
-  }
-});
-
-// Manejo de enlaces de la barra lateral
-document.querySelectorAll('.admin-sidebar nav a').forEach(link => {
-  link.onclick = (e) => {
-    document.querySelectorAll('.admin-sidebar nav a').forEach(l => l.classList.remove('active'));
-    link.classList.add('active');
-    // Si es dashboard, reseteamos ruta
-    if (link.getAttribute('href') === '#dashboard') {
-      ruta = { cat: null, tipo: null };
-      cargar();
-    }
-  };
-});
-iniciar();
+$('btnSalir').onclick = async () => { await sb.auth.signOut(); mostrar(false); };
+addEventListener('hashchange', () => $('panel').classList.contains('oculto') || vista());
+sb.auth.getSession().then(({data}) => mostrar(!!data.session));
