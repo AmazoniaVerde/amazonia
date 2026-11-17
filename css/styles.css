@@ -194,7 +194,7 @@ img {
   align-items: center;
   background:
     linear-gradient(90deg, var(--cream-bg) 0%, rgba(249, 245, 240, 0.9) 40%, rgba(249, 245, 240, 0) 100%),
-    url('../img/fondo-catalogo-amazonia.png') right center / contain no-repeat;
+    url('../img/dashboard-jardin.png') right center / cover no-repeat;
 }
 
 .hero-content {
@@ -987,7 +987,7 @@ hr {
 
   .hero {
     background: linear-gradient(180deg, rgba(249, 245, 240, 0.9) 0%, rgba(249, 245, 240, 0.9) 100%),
-                url('../img/fondo-catalogo-amazonia.png') center/cover;
+                url('../img/dashboard-jardin.png') center/cover;
     text-align: center;
     padding: 4rem 0;
   }
