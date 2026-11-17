@@ -26,7 +26,7 @@ function campo([k, l, t, req], v, o) {
 function form(tbl, vals = {}, opts = {}, extra = {}) {
   cur = {tbl, opts, extra};
   const f = $('formulario'); f.hidden = false;
-  f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}<label>Foto (se reduce a 1000 px)<input type="file" name="foto" accept="image/*"></label>${vals.imagen_url ? `<img class="mini" src="${esc(vals.imagen_url)}" alt="">` : ''}<div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
+  f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}<label>Foto (se guarda en 4080 × 3060 px)<input type="file" name="foto" accept="image/*"></label>${vals.imagen_url ? `<img class="mini" src="${esc(vals.imagen_url)}" alt="">` : ''}<div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
 }
 function cab(t, a, m = '') { editId = null; $('titulo').textContent = t; $('ayuda').textContent = a; $('migas').innerHTML = m; $('formulario').hidden = true; $('lista').innerHTML = ''; }
 function filas(tbl, rows, info, extra = () => '') {
@@ -45,8 +45,10 @@ async function stats() {
   $('count-stock').textContent = vs.filter(x => x.stock <= 3).length;
 }
 async function subir(file) {
-  const bmp = await createImageBitmap(file), k = Math.min(1, 1000 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
-  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const bmp = await createImageBitmap(file), targetWidth = 4080, targetHeight = 3060, scale = Math.max(targetWidth / bmp.width, targetHeight / bmp.height), c = document.createElement('canvas');
+  c.width = targetWidth; c.height = targetHeight;
+  const drawWidth = bmp.width * scale, drawHeight = bmp.height * scale;
+  c.getContext('2d').drawImage(bmp, (targetWidth - drawWidth) / 2, (targetHeight - drawHeight) / 2, drawWidth, drawHeight);
   const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .82)), p = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
   const {error} = await sb.storage.from('imagenes').upload(p, blob, {contentType: 'image/jpeg'}); if (error) throw error;
   return sb.storage.from('imagenes').getPublicUrl(p).data.publicUrl;
