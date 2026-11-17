@@ -1028,3 +1028,24 @@ hr {
     grid-template-columns: 1fr;
   }
 }
+
+/* Promociones visuales de la página principal */
+.home-promos { display: grid; grid-template-columns: 1.35fr .65fr; gap: 1.25rem; margin-top: 4rem; }
+.home-promo-main, .home-promo-side { position: relative; overflow: hidden; border-radius: var(--radius-lg); background: var(--white); box-shadow: var(--shadow-md); border: 1px solid var(--line-color); }
+.home-promo-main { min-height: 270px; display: flex; align-items: center; }
+.home-promo-main > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.home-promo-main::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(249,245,240,.98) 0%, rgba(249,245,240,.84) 43%, rgba(249,245,240,.08) 100%); }
+.home-promo-copy { position: relative; z-index: 1; width: 52%; padding: 2rem; }
+.home-promo-copy h2 { color: var(--primary-green); font-size: clamp(1.7rem, 3vw, 2.5rem); margin: .35rem 0 .65rem; }
+.home-promo-copy p { color: var(--muted-text); margin: 0 0 1rem; }
+.home-promo-copy .button { padding: .65rem 1.25rem; }
+.home-promo-side > img { width: 100%; aspect-ratio: 2.75 / 1; object-fit: cover; }
+.home-service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .65rem; padding: .75rem; }
+.home-service-grid a { display: flex; flex-direction: column; align-items: center; gap: .35rem; padding: .45rem; text-align: center; border-radius: 12px; color: var(--primary-green); }
+.home-service-grid a:hover { background: #f1f5f2; transform: translateY(-2px); }
+.home-service-grid img { width: 58px; height: 58px; border-radius: 12px; object-fit: cover; }
+.home-service-grid span { display: flex; flex-direction: column; line-height: 1.2; }
+.home-service-grid b { font-size: .76rem; }
+.home-service-grid small { color: var(--muted-text); font-size: .68rem; margin-top: .2rem; }
+@media (max-width: 850px) { .home-promos { grid-template-columns: 1fr; } .home-promo-copy { width: 65%; } }
+@media (max-width: 480px) { .home-promo-copy { width: 85%; padding: 1.35rem; } .home-service-grid { grid-template-columns: 1fr; } .home-service-grid a { flex-direction: row; text-align: left; } }
