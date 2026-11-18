@@ -19,3 +19,17 @@
 .modal-content{background:#fff;padding:20px;border-radius:12px;max-width:90%;max-height:90%;overflow:auto}
 .crop-container{max-width:100%;max-height:60vh;margin:15px 0}
 .oculto{display:none}
+
+/* WhatsApp-like circle mask for Cropper.js */
+.cropper-view-box,
+.cropper-face {
+  border-radius: 50%;
+}
+.cropper-view-box {
+  outline: 2px solid #fff;
+  outline-bottom-color: rgba(255,255,255,0.3);
+}
+/* Hide square corners/lines for circular feel */
+.cropper-line, .cropper-point { display: none !important; }
+.cropper-bg { background-image: none !important; background-color: #000 !important; }
+

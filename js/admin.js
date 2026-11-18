@@ -185,10 +185,11 @@ $('btnSalir').onclick = async () => { await sb.auth.signOut(); mostrar(false); }
 addEventListener('hashchange', () => $('panel').classList.contains('oculto') || vista());
 sb.auth.getSession().then(({data}) => mostrar(!!data.session));
 
-$(btnCropCancel).onclick = () => {
+$('btnCropCancel').onclick = () => {
   $("modalCrop").classList.add("oculto");
   $("formulario").querySelector("input[type=\"file\"]").value = "";
 };
+$('btnCropRotate').onclick = () => cropper.rotate(90);
 $("btnCropConfirm").onclick = () => {
   const canvas = cropper.getCroppedCanvas({ width: 1000, height: 1000 });
   canvas.toBlob(blob => {
