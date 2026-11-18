@@ -162,7 +162,7 @@ $('formulario').addEventListener('submit', async e => {
 
 document.addEventListener('click', e => {
   const img = e.target.closest('.mini');
-  if (img) { .src = img.src; .classList.remove('oculto'); }
+  if (img) { $('imgFull').src = img.src; $('modalView').classList.remove('oculto'); }
 });
 
 document.addEventListener('click', async e => {
