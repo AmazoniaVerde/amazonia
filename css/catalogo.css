@@ -1,0 +1,12 @@
+/* Familias, tamaños y precios (se carga después de styles.css) */
+.type-chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1.2rem}
+.chip{display:inline-flex;gap:.4rem;align-items:center;padding:.45rem .9rem;border-radius:99px;border:1.5px solid #0e4430;color:#0e4430;background:#fff;font-weight:700;font-size:.9rem;text-decoration:none}
+.chip small{opacity:.7}.chip:hover{background:#e3efe0}.chip.active{background:#0e4430;color:#fff}
+.size-chips{display:flex;flex-wrap:wrap;gap:.3rem;margin:.5rem 0}
+.size-chip{font-size:.78rem;padding:.2rem .5rem;border-radius:8px;background:#e3efe0;color:#0e4430;white-space:nowrap}
+.size-chip b{margin-right:.2rem}.size-chip.soon{background:#f1efe6;color:#888}
+.size-list{display:grid;gap:.5rem;margin:1rem 0}
+.size-row{display:grid;grid-template-columns:1fr auto auto;gap:.8rem;align-items:center;background:#fff;border:1px solid #dfe8da;border-radius:12px;padding:.6rem .9rem}
+.size-row small{color:#777;margin-left:.3rem}
+.size-row .button{padding:.45rem 1rem;font-size:.85rem}
+.size-soon{color:#888;font-weight:700;font-size:.85rem}
