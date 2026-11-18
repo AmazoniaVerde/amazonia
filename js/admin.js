@@ -211,3 +211,8 @@ document.addEventListener('click', e => {
   const img = e.target.closest('.mini');
   if (img) { $('imgFull').src = img.src; $('modalView').classList.remove('oculto'); }
 });
+
+// Cerrar el modal de vista completa al hacer clic fuera de la imagen
+$('modalView').onclick = function() {
+  this.classList.add('oculto');
+};
