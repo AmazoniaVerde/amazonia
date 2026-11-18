@@ -128,7 +128,7 @@ img {
 
 .brand span b {
   font-weight: 800;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
 }
 
 .main-nav {
@@ -281,7 +281,7 @@ img {
 
 .feature {
   background-color: var(--white);
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   display: flex;
@@ -393,7 +393,7 @@ img {
 /* Product Cards */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 2rem;
 }
 
@@ -415,7 +415,7 @@ img {
 }
 
 .product-image {
-  aspect-ratio: 1;
+  aspect-ratio: 16/14;
   overflow: hidden;
   background-color: #f1f5f2;
 }
@@ -432,7 +432,7 @@ img {
 }
 
 .product-body {
-  padding: 1.5rem;
+  padding: 1rem;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
@@ -448,7 +448,7 @@ img {
 }
 
 .product-body h3 {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   color: var(--primary-green);
   margin-bottom: 0.75rem;
 }
@@ -634,7 +634,7 @@ hr {
 
 .care-box {
   background-color: var(--white);
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: var(--radius-md);
   margin-bottom: 2rem;
   display: grid;
@@ -701,7 +701,7 @@ hr {
 }
 
 .footer .brand span {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
 }
 
 .footer p {
@@ -716,7 +716,7 @@ hr {
 
 .footer h3 {
   font-family: 'Fraunces', serif;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   margin-bottom: 1.5rem;
 }
 
