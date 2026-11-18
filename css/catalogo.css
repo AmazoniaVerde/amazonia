@@ -10,3 +10,14 @@
 .size-row small{color:#777;margin-left:.3rem}
 .size-row .button{padding:.45rem 1rem;font-size:.85rem}
 .size-soon{color:#888;font-weight:700;font-size:.85rem}
+
+/* Ajustes catálogo */
+.catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+.product-card { font-size: 0.9rem; }
+.product-image { aspect-ratio: 1/1; }
+.product-body { padding: 0.8rem; }
+.product-body h3 { font-size: 1rem; margin-bottom: 0.4rem; }
+.product-meta { font-size: 0.9rem; }
+.price { font-size: 1.1rem; }
+.product-card .button { font-size: 0.85rem; padding: 0.5rem; }
+@media (max-width: 600px) { .catalog-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; } }
