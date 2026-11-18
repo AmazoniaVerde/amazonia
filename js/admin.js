@@ -52,7 +52,17 @@ async function subir(file) {
   const {error} = await sb.storage.from('imagenes').upload(p, blob, {contentType: 'image/jpeg'}); if (error) throw error;
   return sb.storage.from('imagenes').getPublicUrl(p).data.publicUrl;
 }
-const tablaPedidos = (r, editable) => r.length ? `<div class="tabla-wrap"><table class="tabla"><tr><th>N°</th><th>Cliente</th>${editable ? '<th>Detalle</th>' : ''}<th>Total</th><th>Fecha</th><th>Estado</th></tr>${r.map(p => `<tr><td>#${String(p.id).padStart(6, '0')}</td><td>${esc(p.nombre_cliente)}</td>${editable ? `<td>${(p.items || []).map(i => `${esc(i.cantidad)}× ${esc(i.nombre)}`).join(', ')}</td>` : ''}<td>${money(p.total)}</td><td>${fecha(p.creado)}</td><td>${editable ? `<select data-act="estado" data-id="${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>` : esc(p.estado)}</td></tr>`).join('')}</table></div>` : '<p class="ayuda">Aún no hay pedidos.</p>';
+function itemsDe(p) {
+  let it = p.items;
+  if (typeof it === 'string') { try { it = JSON.parse(it); } catch { return []; } }
+  if (Array.isArray(it)) return it;
+  if (it && typeof it === 'object') {
+    if (Array.isArray(it.productos)) return it.productos;
+    if (Array.isArray(it.items)) return it.items;
+  }
+  return [];
+}
+const tablaPedidos = (r, editable) => r.length ? `<div class="tabla-wrap"><table class="tabla"><tr><th>N°</th><th>Cliente</th>${editable ? '<th>Detalle</th>' : ''}<th>Total</th><th>Fecha</th><th>Estado</th></tr>${r.map(p => `<tr><td>#${String(p.id).padStart(6, '0')}</td><td>${esc(p.nombre_cliente)}</td>${editable ? `<td>${itemsDe(p).map(i => `${esc(i.cantidad)}× ${esc(i.nombre)}`).join(', ')}</td>` : ''}<td>${money(p.total)}</td><td>${fecha(p.creado)}</td><td>${editable ? `<select data-act="estado" data-id="${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>` : esc(p.estado)}</td></tr>`).join('')}</table></div>` : '<p class="ayuda">Aún no hay pedidos.</p>';
 const resumen = id => (PRES[id] || []).map(x => `${x.tamano[0]} ${x.precio == null ? 'Pronto' : money(x.precio)}`).join(' · ');
 const V = {
   async dashboard() {
@@ -61,7 +71,7 @@ const V = {
     const ped = pr.error ? [] : pr.data, ok = ped.filter(p => VENDIDO.includes(p.estado)), bajos = low.data || [];
     const dias = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return d; });
     const tot = dias.map(d => ok.filter(p => new Date(p.creado).toDateString() === d.toDateString()).reduce((s, p) => s + Number(p.total), 0)), mx = Math.max(1, ...tot);
-    const top = {}; ok.forEach(p => (p.items || []).forEach(i => top[i.nombre] = (top[i.nombre] || 0) + Number(i.cantidad || 0)));
+    const top = {}; ok.forEach(p => itemsDe(p).forEach(i => top[i.nombre] = (top[i.nombre] || 0) + Number(i.cantidad || 0)));
     const tp = Object.entries(top).sort((a, b) => b[1] - a[1]).slice(0, 4), tm = tp[0]?.[1] || 1;
     $('lista').innerHTML = `${pr.error ? '<p class="error">Falta la tabla de pedidos: ejecuta sql/00-supabase-completo.sql en Supabase.</p>' : ''}<div class="dash">
     <section class="av-card"><h3>Ventas por día (7 días)</h3><div class="av-bars">${tot.map((t, i) => `<div title="${money(t)}"><i style="height:${Math.round(t / mx * 100)}%"></i>${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][dias[i].getDay()]}</div>`).join('')}</div></section>
