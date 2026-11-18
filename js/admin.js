@@ -28,6 +28,8 @@ const tamBlock = v => `<div class="tam-box"><h4>Tamaños y precios <small>(preci
 function form(tbl, vals = {}, opts = {}, extra = {}) {
   cur = {tbl, opts, extra};
   const f = $('formulario'); f.hidden = false;
+  f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}${tbl === 'variedades' ? tamBlock(vals) : ''}<label>Foto (se reduce a 1000 px)<input type="file" name="foto" accept="image/*"></label>${vals.imagen_url ? `<img class="mini" src="${esc(vals.imagen_url)}" alt="">` : ''}<div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
+
   const fileInput = f.querySelector('input[type="file"]');
   if (fileInput) {
     fileInput.onchange = e => {
@@ -40,7 +42,6 @@ function form(tbl, vals = {}, opts = {}, extra = {}) {
       }; reader.readAsDataURL(file);
     };
   }
-  f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}${tbl === 'variedades' ? tamBlock(vals) : ''}<label>Foto (se reduce a 1000 px)<input type="file" name="foto" accept="image/*"></label>${vals.imagen_url ? `<img class="mini" src="${esc(vals.imagen_url)}" alt="">` : ''}<div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
 }
 function cab(t, a, m = '') { editId = null; $('titulo').textContent = t; $('ayuda').textContent = a; $('migas').innerHTML = m; $('formulario').hidden = true; $('lista').innerHTML = ''; }
 function filas(tbl, rows, info, extra = () => '', dest = 'lista') {
@@ -158,6 +159,12 @@ $('formulario').addEventListener('submit', async e => {
     vista();
   } catch (err) { msg.textContent = /row-level/i.test(err.message) ? 'Sin permiso: inicia sesión con el correo del dueño.' : 'Error: ' + err.message; }
 });
+
+document.addEventListener('click', e => {
+  const img = e.target.closest('.mini');
+  if (img) { .src = img.src; .classList.remove('oculto'); }
+});
+
 document.addEventListener('click', async e => {
   const b = e.target.closest('button[data-act]'); if (!b) return;
   const {act, t, id} = b.dataset;
@@ -199,3 +206,8 @@ $("btnCropConfirm").onclick = () => {
     $("modalCrop").classList.add("oculto");
   }, "image/jpeg", 0.82);
 };
+
+document.addEventListener('click', e => {
+  const img = e.target.closest('.mini');
+  if (img) { $('imgFull').src = img.src; $('modalView').classList.remove('oculto'); }
+});
