@@ -14,7 +14,7 @@
   async function finalizar(nombre, form) {
     if (!cart.length) return alert('Tu carrito está vacío.');
     const total = cart.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
-    const items = cart.map(item => ({ id: item.id, nombre: item.nombre, precio: item.precio, cantidad: item.cantidad }));
+    const items = cart.map(item => ({ id: item.id, presentacion_id: item.presentacion_id || null, variedad_id: item.variedad_id || null, nombre: item.nombre, precio: item.precio, cantidad: item.cantidad }));
     const datos = form ? Object.fromEntries(new FormData(form).entries()) : { nombre };
 
     try {

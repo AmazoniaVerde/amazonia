@@ -16,6 +16,7 @@ declare
   v_pedido_id bigint;
   v_item jsonb;
   v_id bigint;
+  v_presentacion_id bigint;
   v_cantidad integer;
 begin
   if coalesce(trim(p_nombre_cliente), '') = '' then
@@ -36,12 +37,20 @@ begin
 
   for v_item in select value from jsonb_array_elements(coalesce(p_items, '[]'::jsonb)) loop
     v_id := (v_item->>'id')::bigint;
+    v_presentacion_id := nullif(v_item->>'presentacion_id', '')::bigint;
     v_cantidad := greatest(coalesce((v_item->>'cantidad')::integer, 1), 1);
 
-    update public.variedades
-       set stock = stock - v_cantidad
-     where id = v_id
-       and stock >= v_cantidad;
+    if v_presentacion_id is not null then
+      update public.presentaciones
+         set stock = stock - v_cantidad
+       where id = v_presentacion_id
+         and stock >= v_cantidad;
+    else
+      update public.variedades
+         set stock = stock - v_cantidad
+       where id = v_id
+         and stock >= v_cantidad;
+    end if;
 
     if not found then
       raise exception 'Stock insuficiente para el producto %', v_id;
