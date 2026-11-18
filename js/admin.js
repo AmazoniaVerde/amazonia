@@ -28,15 +28,18 @@ const tamBlock = v => `<div class="tam-box"><h4>Tamaños y precios <small>(preci
 function form(tbl, vals = {}, opts = {}, extra = {}) {
   cur = {tbl, opts, extra};
   const f = $('formulario'); f.hidden = false;
-  f.querySelector('input[type="file"]').onchange = e => {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader(); reader.onload = e => {
-      $('imgCrop').src = e.target.result;
-      $('modalCrop').classList.remove('oculto');
-      if (cropper) cropper.destroy();
-      cropper = new Cropper($('imgCrop'), { aspectRatio: 1, viewMode: 1 });
-    }; reader.readAsDataURL(file);
-  };
+  const fileInput = f.querySelector('input[type="file"]');
+  if (fileInput) {
+    fileInput.onchange = e => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader(); reader.onload = e => {
+        $('imgCrop').src = e.target.result;
+        $('modalCrop').classList.remove('oculto');
+        if (cropper) cropper.destroy();
+        cropper = new Cropper($('imgCrop'), { aspectRatio: 1, viewMode: 1 });
+      }; reader.readAsDataURL(file);
+    };
+  }
   f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}${tbl === 'variedades' ? tamBlock(vals) : ''}<label>Foto (se reduce a 1000 px)<input type="file" name="foto" accept="image/*"></label>${vals.imagen_url ? `<img class="mini" src="${esc(vals.imagen_url)}" alt="">` : ''}<div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
 }
 function cab(t, a, m = '') { editId = null; $('titulo').textContent = t; $('ayuda').textContent = a; $('migas').innerHTML = m; $('formulario').hidden = true; $('lista').innerHTML = ''; }
