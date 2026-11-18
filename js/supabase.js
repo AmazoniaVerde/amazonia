@@ -1,13 +1,26 @@
-let catalog=DEMO_PRODUCTS.slice();
-let categories=DEMO_CATEGORIES.slice();
-async function loadCatalog(){
-  if(typeof db==='undefined'||!db||!SUPABASE_URL||SUPABASE_URL.includes('ejemplo')) return;
-  try{
-    const [cats,items]=await Promise.all([
-      db.from('categorias').select('id,nombre,descripcion,imagen_path,orden').eq('activo',true).order('orden'),
-      db.from('variedades').select('id,nombre,descripcion,precio,precio_anterior,stock,etiqueta,rating,num_resenas,tipo_id,tipos(id,nombre,categoria_id,riego,luz,temperatura,categorias(id,nombre))').eq('activo',true).order('creado',{ascending:false})
+// Catálogo de la tienda: lee Supabase con las columnas REALES (sin plantas de ejemplo).
+let catalog = [];
+let categories = [];
+let catalogError = null;
+
+async function loadCatalog() {
+  if (typeof db === 'undefined' || !db) { catalogError = new Error('Supabase no configurado'); return; }
+  try {
+    const [cats, items] = await Promise.all([
+      db.from('categorias').select('id,nombre,descripcion,imagen_url').order('nombre'),
+      db.from('variedades').select('*,tipos(id,nombre,categoria_id,categorias(id,nombre))').eq('visible', true).order('creado', { ascending: false })
     ]);
-    if(!cats.error&&cats.data?.length) categories=cats.data.map(x=>({...x,icon:'🌿'}));
-    if(!items.error&&items.data?.length) catalog=items.data.map(x=>({id:x.id,nombre:x.nombre,descripcion:x.descripcion||'',precio:Number(x.precio),stock:x.stock||0,etiqueta:x.etiqueta||'',rating:x.rating,num_resenas:x.num_resenas,tipo:x.tipos?.nombre||'',categoria_id:x.tipos?.categorias?.id,tipo_id:x.tipo_id,riego:x.tipos?.riego||'',luz:x.tipos?.luz||'',temperatura:x.tipos?.temperatura||'',icon:'🌿'}));
-  }catch(error){console.warn('Usando catálogo de respaldo',error)}
+    if (cats.error || items.error) throw (cats.error || items.error);
+    categories = cats.data.map(x => ({ ...x, icon: '🌿' }));
+    catalog = items.data.map(x => ({
+      id: x.id, nombre: x.nombre, descripcion: x.descripcion || '', precio: Number(x.precio), stock: x.stock || 0,
+      etiqueta: x.destacado ? 'Más vendido' : x.stock <= 0 ? 'Agotado' : x.stock <= 3 ? '¡Últimas unidades!' : '',
+      destacado: !!x.destacado, tipo: x.tipos?.nombre || '', tipo_id: x.tipo_id,
+      categoria_id: x.tipos?.categorias?.id, categoria: x.tipos?.categorias?.nombre || '',
+      riego: x.riego || '', luz: x.luz || '', altura: x.altura || '', dificultad: x.dificultad || '',
+      imagen_url: x.imagen_url || '', icon: '🌿'
+    }));
+  } catch (error) { catalogError = error; console.error('No se pudo cargar el catálogo', error); }
 }
+// El número de WhatsApp sale solo de config.js
+document.querySelector('.whatsapp-float')?.setAttribute('href', `https://wa.me/${WHATSAPP}`);
