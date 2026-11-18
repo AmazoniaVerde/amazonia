@@ -4,7 +4,8 @@ create or replace function public.crear_pedido(
   p_nombre_cliente text,
   p_total numeric,
   p_items jsonb,
-  p_estado text default 'Pendiente'
+  p_estado text default 'Pendiente',
+  p_datos jsonb default '{}'::jsonb
 )
 returns bigint
 language plpgsql
@@ -22,7 +23,15 @@ begin
   end if;
 
   insert into public.pedidos (nombre_cliente, total, items, estado)
-  values (trim(p_nombre_cliente), greatest(coalesce(p_total, 0), 0), coalesce(p_items, '[]'::jsonb), coalesce(p_estado, 'Pendiente'))
+  values (
+    trim(p_nombre_cliente),
+    greatest(coalesce(p_total, 0), 0),
+    jsonb_build_object(
+      'productos', coalesce(p_items, '[]'::jsonb),
+      'cliente', coalesce(p_datos, '{}'::jsonb)
+    ),
+    coalesce(p_estado, 'Pendiente')
+  )
   returning id into v_pedido_id;
 
   for v_item in select value from jsonb_array_elements(coalesce(p_items, '[]'::jsonb)) loop
@@ -43,5 +52,5 @@ begin
 end;
 $$;
 
-revoke all on function public.crear_pedido(text, numeric, jsonb, text) from public;
-grant execute on function public.crear_pedido(text, numeric, jsonb, text) to anon, authenticated;
+revoke all on function public.crear_pedido(text, numeric, jsonb, text, jsonb) from public;
+grant execute on function public.crear_pedido(text, numeric, jsonb, text, jsonb) to anon, authenticated;
