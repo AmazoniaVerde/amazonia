@@ -7,7 +7,7 @@ const fecha = d => d ? new Date(d).toLocaleString('es-PE', {day:'2-digit', month
 const ESTADOS = ['Pendiente', 'Confirmado', 'En camino', 'Entregado', 'Cancelado'];
 const VENDIDO = ['Confirmado', 'En camino', 'Entregado'];
 const TAM = ['Pequeño', 'Mediano', 'Grande'];
-let editId = null, cur = {}, cache = {}, PRES = {};
+let editId = null, cur = {}, cache = {}, PRES = {}, cropper = null;
 // [campo, etiqueta, tipo, obligatorio]
 const FORMS = {
   categorias: [['nombre','Nombre','text',1],['descripcion','Descripción','textarea']],
@@ -28,6 +28,15 @@ const tamBlock = v => `<div class="tam-box"><h4>Tamaños y precios <small>(preci
 function form(tbl, vals = {}, opts = {}, extra = {}) {
   cur = {tbl, opts, extra};
   const f = $('formulario'); f.hidden = false;
+  f.querySelector('input[type="file"]').onchange = e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader(); reader.onload = e => {
+      $('imgCrop').src = e.target.result;
+      $('modalCrop').classList.remove('oculto');
+      if (cropper) cropper.destroy();
+      cropper = new Cropper($('imgCrop'), { aspectRatio: 1, viewMode: 1 });
+    }; reader.readAsDataURL(file);
+  };
   f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}${tbl === 'variedades' ? tamBlock(vals) : ''}<label>Foto (se reduce a 1000 px)<input type="file" name="foto" accept="image/*"></label>${vals.imagen_url ? `<img class="mini" src="${esc(vals.imagen_url)}" alt="">` : ''}<div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
 }
 function cab(t, a, m = '') { editId = null; $('titulo').textContent = t; $('ayuda').textContent = a; $('migas').innerHTML = m; $('formulario').hidden = true; $('lista').innerHTML = ''; }
@@ -172,3 +181,17 @@ $('formLogin').addEventListener('submit', async e => {
 $('btnSalir').onclick = async () => { await sb.auth.signOut(); mostrar(false); };
 addEventListener('hashchange', () => $('panel').classList.contains('oculto') || vista());
 sb.auth.getSession().then(({data}) => mostrar(!!data.session));
+
+$(btnCropCancel).onclick = () => {
+  $("modalCrop").classList.add("oculto");
+  $("formulario").querySelector("input[type=\"file\"]").value = "";
+};
+$("btnCropConfirm").onclick = () => {
+  const canvas = cropper.getCroppedCanvas({ width: 1000, height: 1000 });
+  canvas.toBlob(blob => {
+    const file = new File([blob], "recorte.jpg", { type: "image/jpeg" });
+    const dt = new DataTransfer(); dt.items.add(file);
+    $("formulario").querySelector("input[type=\"file\"]").files = dt.files;
+    $("modalCrop").classList.add("oculto");
+  }, "image/jpeg", 0.82);
+};
