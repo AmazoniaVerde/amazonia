@@ -25,7 +25,7 @@
       return;
     }
 
-    const text = `Hola, soy ${nombre || 'Cliente'}. Quiero registrar mi pedido:\n\n${items.map(item => `• ${item.cantidad} x ${item.nombre} = ${money(item.precio * item.cantidad)}`).join('\n')}\n\nTeléfono: ${datos.telefono || '-'}\nCiudad: ${datos.ciudad || '-'}\nDirección/agencia: ${datos.direccion || '-'}\nEnvío: ${datos.envio || '-'}\nPago: ${datos.pago || '-'}${datos.notas ? `\nNotas: ${datos.notas}` : ''}\n\nTotal: ${money(total)}`;
+    const text = `Hola, soy ${nombre || 'Cliente'}. Quiero registrar mi pedido:\n\n${items.map(item => `• ${item.cantidad} x ${item.nombre} = ${money(item.precio * item.cantidad)}`).join('\n')}\n\nDNI: ${datos.dni || '-'}\nTeléfono: ${datos.telefono || '-'}\nCiudad: ${datos.ciudad || '-'}\nDirección/agencia: ${datos.direccion || '-'}\nEnvío: ${datos.envio || '-'}\nPago: ${datos.pago || '-'}${datos.notas ? `\nNotas: ${datos.notas}` : ''}\n\nTotal: ${money(total)}`;
     cart = [];
     saveCart();
     if (form) form.reset();
