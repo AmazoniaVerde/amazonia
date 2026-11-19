@@ -8,7 +8,7 @@
 
     features.insertAdjacentHTML('afterend', `<section class="home-promos container" aria-label="Beneficios de Amazonia Verde">
       <div class="home-promo-main">
-        <img src="img/11_banner_productos.jpg" alt="Productos de la mejor calidad">
+        <img src="img/fondos/fondo-productos-calidad.png" alt="Productos de la mejor calidad">
         <div class="home-promo-copy"><small class="eyebrow">Colección seleccionada</small><h2>Productos de la mejor calidad</h2><p>Cuida, decora y vive con más naturaleza.</p><a class="button button-primary" href="#catalogo">Ver productos →</a></div>
       </div>
       <div class="home-promo-side">

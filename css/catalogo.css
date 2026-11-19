@@ -11,8 +11,19 @@
 .size-row .button{padding:.45rem 1rem;font-size:.85rem}
 .size-soon{color:#888;font-weight:700;font-size:.85rem}
 
+.category-care{margin-top:5rem}
+.category-care .section-heading{margin-bottom:2rem}
+.category-care .section-heading p{color:var(--muted-text);margin-top:.7rem}
+.care-guide-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.care-guide-card{padding:1.4rem;background:#fff;border:1px solid var(--line-color);border-radius:18px;box-shadow:var(--shadow-sm)}
+.care-guide-card>span{font-size:2rem}
+.care-guide-card h3{margin:.75rem 0;color:var(--primary-green)}
+.care-guide-card details{margin-top:1rem;padding-top:.8rem;border-top:1px solid var(--line-color)}
+.care-guide-card summary{color:var(--secondary-green);font-weight:700;cursor:pointer}
+.care-guide-card details p{margin:.7rem 0 0;color:var(--muted-text);line-height:1.6}
+
 /* Ajustes catÃ¡logo */
-.catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+.catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; align-content: start; align-items: start; }
 .product-card { font-size: 0.9rem; }
 .product-image { aspect-ratio: 1/1; }
 .product-body { padding: 0.8rem; }
@@ -21,3 +32,10 @@
 .price { font-size: 1.1rem; }
 .product-card .button { font-size: 0.85rem; padding: 0.5rem; }
 @media (max-width: 600px) { .catalog-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; } }
+
+/* Fotografías para la guía de cuidados de Ornamentales */
+.care-guide-card{padding:0;overflow:hidden}
+.care-guide-image{display:block;width:100%;height:145px;object-fit:cover}
+.care-guide-content{padding:1.2rem 1.4rem 1.4rem}
+.care-guide-content>span{font-size:2rem}
+@media(max-width:600px){.care-guide-image{height:125px}}

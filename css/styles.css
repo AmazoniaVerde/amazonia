@@ -524,6 +524,24 @@ img {
   margin-top: 1rem;
 }
 
+.banner-carnivoras {
+  background: linear-gradient(90deg, rgba(7, 35, 24, .38), rgba(7, 35, 24, .18)), url('../img/fondos/pantano-carnivoras.png') center 52% / cover;
+}
+
+.banner-carnivoras .eyebrow { color: #d9f0d7; }
+
+.banner-catalogo {
+  background: linear-gradient(90deg, rgba(7, 35, 24, .48), rgba(7, 35, 24, .24)), url('../img/fondos/sendero-tropical.png') center 52% / cover;
+}
+
+.banner-catalogo .eyebrow { color: #d9f0d7; }
+
+.banner-ornamentales {
+  background: linear-gradient(90deg, rgba(7, 35, 24, .42), rgba(7, 35, 24, .18)), url('../img/fondos/jardin-ornamentales.png') center 52% / cover;
+}
+
+.banner-ornamentales .eyebrow { color: #d9f0d7; }
+
 .banner h2 {
   font-size: 3rem;
   margin-bottom: 1rem;
@@ -1170,3 +1188,34 @@ hr {
 .cart-page-empty { padding: 3rem 0; text-align: center; }
 .cart-page-empty h2 { color: var(--primary-green); }
 @media (max-width: 700px) { .cart-page { padding-top: 2.5rem; } .cart-page h1 { margin-bottom: 2rem; } .cart-page-bottom { flex-direction: column; align-items: stretch; gap: 1rem; } .cart-page-bottom .button { min-width: 0; } }
+
+/* Politica de envios y libro de reclamaciones */
+.shipping-hero{display:grid;grid-template-columns:1fr 1.15fr;gap:2rem;align-items:center;padding-top:3rem;padding-bottom:2rem}
+.shipping-hero h1{font-size:clamp(2.4rem,5vw,4rem);color:var(--primary-green);margin:.7rem 0 1rem}
+.shipping-hero p{font-size:1.1rem;color:var(--muted-text);margin-bottom:1.5rem}
+.shipping-hero img{width:100%;height:auto;aspect-ratio:1/1;object-fit:contain;border-radius:24px;box-shadow:var(--shadow-md)}
+.shipping-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:1rem}
+.shipping-info-card,.shipping-requirements{background:#fff;border:1px solid var(--line-color);border-radius:18px;padding:1.4rem;box-shadow:var(--shadow-sm)}
+.shipping-info-card>span{font-size:1.8rem}.shipping-info-card h3,.shipping-requirements h3{color:var(--primary-green);margin:.6rem 0}.shipping-info-card p,.shipping-requirements p{color:var(--muted-text);line-height:1.65;margin-bottom:0}
+.shipping-requirements{margin-top:1rem;background:#f2f7ef}
+.complaints-section{display:grid;grid-template-columns:.8fr 1.2fr;gap:2rem;align-items:start;padding-top:3rem}
+.complaints-intro h2{font-size:clamp(2rem,4vw,3rem);color:var(--primary-green);margin:.7rem 0 1rem}
+.complaints-intro>p{color:var(--muted-text);line-height:1.7}.provider-details{padding:1rem;background:#fff;border-radius:14px;border:1px solid var(--line-color)}
+.complaints-form{padding:1.6rem;background:#fff;border:1px solid var(--line-color);border-radius:20px;box-shadow:var(--shadow-sm)}
+.complaints-form h3{color:var(--primary-green);margin-bottom:1rem}.complaints-fields{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.complaints-form label{display:grid;gap:.35rem;font-weight:700;color:var(--dark-text)}
+.complaints-form input,.complaints-form select,.complaints-form textarea{width:100%;padding:.75rem .85rem;border:1px solid var(--line-color);border-radius:10px;background:#fff;color:var(--dark-text);font:inherit}
+.complaints-form textarea{resize:vertical}.complaints-form .complaints-wide{grid-column:1/-1}.complaints-form .complaints-consent{display:flex;align-items:flex-start;gap:.6rem;margin:1rem 0;font-size:.9rem}.complaints-consent input{width:auto;margin-top:.3rem}
+.complaints-form>small{display:block;color:var(--muted-text);line-height:1.5;margin-top:.8rem}.complaints-form .form-note{margin:.8rem 0;color:var(--primary-green);font-weight:700}
+.complaints-form button:disabled{opacity:.65;cursor:wait}
+@media(max-width:800px){.shipping-hero,.complaints-section{grid-template-columns:1fr}.shipping-hero img{height:auto}.complaints-section{gap:1rem}}
+@media(max-width:520px){.complaints-fields{grid-template-columns:1fr}.complaints-form .complaints-wide{grid-column:auto}.shipping-hero{padding-top:2rem}}
+
+/* Contacto directo: WhatsApp y correo */
+.contact-only{min-height:65vh;padding-top:5rem}
+.contact-only .section-heading{margin-bottom:2.5rem}
+.contact-only-grid{display:grid;grid-template-columns:repeat(2,minmax(240px,380px));justify-content:center;gap:1.25rem}
+.contact-only-card{display:flex;flex-direction:column;align-items:center;gap:.6rem;padding:2rem 1.5rem;text-align:center;background:#fff;border:1px solid var(--line-color);border-radius:22px;box-shadow:var(--shadow-sm);color:var(--primary-green);transition:var(--transition)}
+.contact-only-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}
+.contact-only-card>span{font-size:2.4rem}.contact-only-card small{letter-spacing:.1em;color:var(--muted-text);font-weight:800}.contact-only-card strong{font-size:1.2rem;overflow-wrap:anywhere}.contact-only-card em{font-style:normal;font-weight:700;color:var(--secondary-green)}
+@media(max-width:600px){.contact-only-grid{grid-template-columns:1fr}.contact-only{padding-top:3rem}}

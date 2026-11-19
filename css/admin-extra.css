@@ -54,3 +54,10 @@
 .cropper-line, .cropper-point { display: block !important; }
 .cropper-bg { background-image: none !important; background-color: #000 !important; }
 
+
+.reclamo-admin{background:#fff;border:1px solid #e6dfcb;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 4px 16px rgba(14,68,48,.07)}
+.reclamo-admin header{display:flex;justify-content:space-between;align-items:center;gap:14px;border-bottom:1px solid #e6dfcb;padding-bottom:12px;margin-bottom:12px}
+.reclamo-admin header small{color:#5b6b60}.reclamo-admin header h3{margin-top:4px}.reclamo-admin header select{width:auto;min-width:140px}
+.reclamo-admin p{white-space:pre-wrap;overflow-wrap:anywhere}.reclamo-admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.reclamo-admin label{display:grid;gap:6px;font-weight:700;margin:12px 0}.reclamo-admin textarea{width:100%;padding:10px;border:1px solid #d8e4d9;border-radius:10px;font:inherit;resize:vertical}
+@media(max-width:600px){.reclamo-admin header{align-items:flex-start;flex-direction:column}.reclamo-admin-grid{grid-template-columns:1fr}}

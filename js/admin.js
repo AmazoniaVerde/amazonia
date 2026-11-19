@@ -110,6 +110,17 @@ const V = {
     cab('Pedidos', 'Pedidos enviados desde el carrito. Cambia el estado según avances.');
     $('lista').innerHTML = tablaPedidos(await get('pedidos', q => q.order('creado', {ascending: false}).limit(200)), true);
   },
+  async reclamos() {
+    cab('Reclamos y sugerencias', 'Libro de Reclamaciones: revisa cada registro y anota la respuesta del proveedor.');
+    const r = await sb.from('libro_reclamaciones').select('*').order('creado', {ascending: false}).limit(500);
+    if (r.error) throw new Error('Ejecuta sql/07-libro-reclamaciones.sql en Supabase: ' + r.error.message);
+    $('lista').innerHTML = r.data.length ? r.data.map(x => {
+      const card = document.createElement('article'); card.className = 'reclamo-admin';
+      card.innerHTML = '<header><div><small>LR-' + String(x.id).padStart(6, '0') + ' · ' + fecha(x.creado) + '</small><h3>' + esc(x.tipo) + ' · ' + esc(x.nombre) + '</h3></div><select data-act="estadoReclamo" data-id="' + x.id + '" aria-label="Estado del registro"><option ' + (x.estado === 'Recibido' ? 'selected' : '') + '>Recibido</option><option ' + (x.estado === 'En atención' ? 'selected' : '') + '>En atención</option><option ' + (x.estado === 'Respondido' ? 'selected' : '') + '>Respondido</option></select></header><div class="reclamo-admin-grid"><p><b>DNI:</b> ' + esc(x.dni) + '<br><b>Teléfono:</b> ' + esc(x.telefono) + '<br><b>Correo:</b> ' + esc(x.correo) + '</p><p><b>Producto/servicio:</b> ' + esc(x.producto_servicio) + '<br><b>Monto:</b> ' + (x.monto == null ? 'No indicado' : money(x.monto)) + '</p></div><p><b>Detalle:</b><br>' + esc(x.detalle) + '</p><p><b>Pedido concreto:</b><br>' + esc(x.pedido_consumidor) + '</p><label>Respuesta / acciones del proveedor<textarea id="respuesta-' + x.id + '" rows="3">' + esc(x.respuesta || '') + '</textarea></label><button class="btn-secundario" data-act="guardarRespuesta" data-id="' + x.id + '">Guardar respuesta</button>';
+      card.innerHTML += '<a class="btn-link" href="mailto:' + encodeURIComponent(x.correo) + '?subject=' + encodeURIComponent('Respuesta a su registro LR-' + String(x.id).padStart(6, '0')) + '&body=' + encodeURIComponent(x.respuesta || '') + '">Redactar respuesta por correo →</a>';
+      return card.outerHTML;
+    }).join('') : '<p class="ayuda">Aún no hay comunicaciones registradas.</p>';
+  },
   async categorias() {
     cab('Categorías', 'Carnívoras, Ornamentales… Entra a una para ver sus familias.');
     form('categorias');
@@ -209,6 +220,7 @@ document.addEventListener('click', async e => {
   if (act === 'edit') { editId = id; form(cur.tbl, cache[t][id], cur.opts, cur.extra); return $('formulario').scrollIntoView({behavior: 'smooth'}); }
   let r;
   if (act === 'del') { if (!confirm(`¿Borrar «${cache[t][id].nombre}»?${t === 'variedades' ? '' : '\n\n⚠️ También se borrará todo lo que contiene.'}`)) return; r = await sb.from(t).delete().eq('id', id); }
+  if (act === 'guardarRespuesta') { const respuesta = $('respuesta-' + id).value.trim(); const {error} = await sb.from('libro_reclamaciones').update({respuesta}).eq('id', id); if (error) return alert('No se pudo guardar: ' + error.message); alert('Respuesta guardada. Recuerda comunicarla al correo indicado por el consumidor.'); return vista(); }
   if (act === 'delEntregados') {
     if (!confirm('¿Eliminar todos los pedidos que estén marcados como entregados? Esta acción no se puede deshacer.')) return;
     const {data, error} = await sb.from('pedidos').delete().eq('estado', 'Entregado').select('id');
@@ -222,6 +234,7 @@ document.addEventListener('click', async e => {
   vista();
 });
 document.addEventListener('change', async e => {
+  const sr = e.target.closest('select[data-act="estadoReclamo"]'); if (sr) { const {error} = await sb.from('libro_reclamaciones').update({estado:sr.value}).eq('id',sr.dataset.id); if (error) alert('Error: ' + error.message); return; }
   const s = e.target.closest('select[data-act="estado"]'); if (!s) return;
   const {error} = await sb.from('pedidos').update({estado: s.value}).eq('id', s.dataset.id);
   if (error) alert('Error: ' + error.message); else { s.className = `estado-select estado-${claseEstado(s.value)}`; stats(); if (s.value === 'Entregado') vista(); }
