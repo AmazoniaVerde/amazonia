@@ -27,6 +27,7 @@ async function loadCatalog() {
       const precios = tamanos.filter(s => s.precio != null).map(s => s.precio);
       return {
         id: x.id, nombre: x.nombre, descripcion: x.descripcion || '', imagen_url: x.imagen_url || '',
+        fotos: Array.isArray(x.fotos) ? [...new Set([x.imagen_url, ...x.fotos].filter(Boolean))] : (x.imagen_url ? [x.imagen_url] : []),
         tipo: tp.nombre || '', tipo_id: x.tipo_id, categoria_id: tp.categoria_id, categoria: ct.nombre || '',
         riego: x.riego || '', luz: x.luz || '', altura: x.altura || '', dificultad: x.dificultad || '',
         destacado: !!x.destacado, etiqueta: x.destacado ? 'Más vendido' : '',

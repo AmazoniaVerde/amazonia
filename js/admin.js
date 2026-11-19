@@ -7,7 +7,7 @@ const fecha = d => d ? new Date(d).toLocaleString('es-PE', {day:'2-digit', month
 const ESTADOS = ['Pendiente', 'Confirmado', 'En camino', 'Entregado', 'Cancelado'];
 const VENDIDO = ['Confirmado', 'En camino', 'Entregado'];
 const TAM = ['Pequeño', 'Mediano', 'Grande'];
-let editId = null, cur = {}, cache = {}, PRES = {}, cropper = null;
+let editId = null, cur = {}, cache = {}, PRES = {}, cropper = null, photoQueue = [], pendingPhotos = [];
 // [campo, etiqueta, tipo, obligatorio]
 const FORMS = {
   categorias: [['nombre','Nombre','text',1],['descripcion','Descripción','textarea']],
@@ -26,22 +26,25 @@ function campo([k, l, t, req], v, o) {
 }
 const tamBlock = v => `<div class="tam-box"><h4>Tamaños y precios <small>(precio vacío = «Pronto» · stock vacío = sin límite)</small></h4>${TAM.map((n, i) => { const r = (PRES[v.id] || []).find(x => x.tamano === n) || {}; return `<div class="tam-row"><b>${n}</b><input name="precio_${i}" type="number" step="any" min="0" placeholder="Precio (Pronto)" value="${r.precio ?? ''}"><input name="stock_${i}" type="number" min="0" placeholder="Stock (sin límite)" value="${r.stock ?? ''}"><input name="detalle_${i}" placeholder="Nota (ej. Cormo)" value="${esc(r.detalle || '')}"></div>`; }).join('')}</div>`;
 function form(tbl, vals = {}, opts = {}, extra = {}) {
-  cur = {tbl, opts, extra};
+  cur = {tbl, opts, extra, vals};
   const f = $('formulario'); f.hidden = false;
-  f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}${tbl === 'variedades' ? tamBlock(vals) : ''}<label>Foto (se reduce a 1000 px)<input type="file" name="foto" accept="image/*"></label>${vals.imagen_url ? `<img class="mini" src="${esc(vals.imagen_url)}" alt="">` : ''}<div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
+  f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}${tbl === 'variedades' ? tamBlock(vals) : ''}<label>${tbl === 'variedades' ? 'Fotos (selecciona varias; recorte 5:6, hasta 1600 × 1920 px)' : 'Foto (recorte 5:6, hasta 1600 × 1920 px)'}<input type="file" name="foto" accept="image/*" ${tbl === 'variedades' ? 'multiple' : ''}></label>${vals.imagen_url ? `<div class="foto-admin-preview">${(Array.isArray(vals.fotos)&&vals.fotos.length?vals.fotos:[vals.imagen_url]).map(url=>`<img src="${esc(url)}" alt="Foto del producto">`).join('')}</div>` : ''}<div id="fotosPendientes" class="foto-admin-preview"></div><div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
 
+  pendingPhotos = []; photoQueue = [];
   const fileInput = f.querySelector('input[type="file"]');
   if (fileInput) {
     fileInput.onchange = e => {
-      const file = e.target.files[0]; if (!file) return;
-      const reader = new FileReader(); reader.onload = e => {
-        $('imgCrop').src = e.target.result;
-        $('modalCrop').classList.remove('oculto');
-        if (cropper) cropper.destroy();
-        cropper = new Cropper($('imgCrop'), { aspectRatio: 1, viewMode: 1 });
-      }; reader.readAsDataURL(file);
+      photoQueue = [...e.target.files]; abrirSiguienteRecorte();
     };
   }
+}
+function abrirSiguienteRecorte() {
+  const file = photoQueue.shift(); if (!file) return;
+  const reader = new FileReader(); reader.onload = e => {
+    $('imgCrop').src = e.target.result; $('modalCrop').classList.remove('oculto');
+    if (cropper) cropper.destroy();
+    cropper = new Cropper($('imgCrop'), { aspectRatio: 5 / 6, viewMode: 1, responsive: true, autoCropArea: 0.9 });
+  }; reader.readAsDataURL(file);
 }
 function cab(t, a, m = '') { editId = null; $('titulo').textContent = t; $('ayuda').textContent = a; $('migas').innerHTML = m; $('formulario').hidden = true; $('lista').innerHTML = ''; }
 function filas(tbl, rows, info, extra = () => '', dest = 'lista') {
@@ -59,7 +62,7 @@ async function stats() {
   $('count-stock').textContent = ps.filter(y => y.precio != null && y.stock != null && y.stock <= 3).length;
 }
 async function subir(file) {
-  const bmp = await createImageBitmap(file), k = Math.min(1, 1000 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+  const bmp = await createImageBitmap(file), k = Math.min(1, 1920 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
   c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
   const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', .82)), p = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.jpg`;
   const {error} = await sb.storage.from('imagenes').upload(p, blob, {contentType: 'image/jpeg'}); if (error) throw error;
@@ -75,7 +78,8 @@ function itemsDe(p) {
   }
   return [];
 }
-const tablaPedidos = (r, editable) => r.length ? `<div class="tabla-wrap"><table class="tabla"><tr><th>N°</th><th>Cliente</th>${editable ? '<th>Detalle</th>' : ''}<th>Total</th><th>Fecha</th><th>Estado</th></tr>${r.map(p => `<tr><td>#${String(p.id).padStart(6, '0')}</td><td>${esc(p.nombre_cliente)}</td>${editable ? `<td>${itemsDe(p).map(i => `${esc(i.cantidad)}× ${esc(i.nombre)}`).join(', ')}</td>` : ''}<td>${money(p.total)}</td><td>${fecha(p.creado)}</td><td>${editable ? `<select data-act="estado" data-id="${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>` : esc(p.estado)}</td></tr>`).join('')}</table></div>` : '<p class="ayuda">Aún no hay pedidos.</p>';
+const claseEstado = estado => ({'Pendiente':'pendiente','Confirmado':'confirmado','En camino':'camino','Entregado':'entregado','Cancelado':'cancelado'}[estado] || '');
+const tablaPedidos = (r, editable) => r.length ? `<div class="tabla-wrap"><table class="tabla"><tr><th>N°</th><th>Cliente</th>${editable ? '<th>Detalle</th>' : ''}<th>Total</th><th>Fecha</th><th>Estado</th></tr>${r.map(p => `<tr><td>#${String(p.id).padStart(6, '0')}</td><td>${esc(p.nombre_cliente)}</td>${editable ? `<td>${itemsDe(p).map(i => `${esc(i.cantidad)}× ${esc(i.nombre)}`).join(', ')}</td>` : ''}<td>${money(p.total)}</td><td>${fecha(p.creado)}</td><td>${editable ? `<select class="estado-select estado-${claseEstado(p.estado)}" data-act="estado" data-id="${p.id}">${ESTADOS.map(e => `<option ${e === p.estado ? 'selected' : ''}>${e}</option>`).join('')}</select>` : esc(p.estado)}</td></tr>`).join('')}</table></div>${editable ? `<div class="pedidos-acciones"><button type="button" class="btn-peligro" data-act="delEntregados" ${r.some(p => p.estado === 'Entregado') ? '' : 'disabled'}>Eliminar pedidos entregados</button></div>` : ''}` : '<p class="ayuda">Aún no hay pedidos.</p>';
 const resumen = id => (PRES[id] || []).map(x => `${x.tamano[0]} ${x.precio == null ? 'Pronto' : money(x.precio)}`).join(' · ');
 const V = {
   async dashboard() {
@@ -147,7 +151,15 @@ $('formulario').addEventListener('submit', async e => {
   msg.textContent = 'Guardando…';
   try {
     for (const [k,, t] of FORMS[cur.tbl]) o[k] = t === 'check' ? fd.has(k) : k === 'tipo_id' ? Number(fd.get(k) || 0) : (fd.get(k) || '').trim() || null;
-    const file = fd.get('foto'); if (file && file.size) o.imagen_url = await subir(file);
+    if (pendingPhotos.length) {
+      msg.textContent = 'Subiendo fotos…';
+      const nuevas = await Promise.all(pendingPhotos.map(subir));
+      if (cur.tbl === 'variedades') {
+        const existentes = Array.isArray(cur.vals?.fotos) ? cur.vals.fotos : (cur.vals?.imagen_url ? [cur.vals.imagen_url] : []);
+        o.fotos = [...new Set([...existentes, ...nuevas])];
+        o.imagen_url = cur.vals?.imagen_url || nuevas[0];
+      } else o.imagen_url = nuevas[0];
+    }
     let pres = null;
     if (cur.tbl === 'variedades') {
       pres = TAM.map((n, i) => ({tamano: n, orden: i + 1, precio: fd.get('precio_' + i) === '' ? null : Number(fd.get('precio_' + i)), stock: fd.get('stock_' + i) === '' ? null : Number(fd.get('stock_' + i)), detalle: (fd.get('detalle_' + i) || '').trim() || null}));
@@ -172,6 +184,13 @@ document.addEventListener('click', async e => {
   if (act === 'edit') { editId = id; form(cur.tbl, cache[t][id], cur.opts, cur.extra); return $('formulario').scrollIntoView({behavior: 'smooth'}); }
   let r;
   if (act === 'del') { if (!confirm(`¿Borrar «${cache[t][id].nombre}»?${t === 'variedades' ? '' : '\n\n⚠️ También se borrará todo lo que contiene.'}`)) return; r = await sb.from(t).delete().eq('id', id); }
+  if (act === 'delEntregados') {
+    if (!confirm('¿Eliminar todos los pedidos que estén marcados como entregados? Esta acción no se puede deshacer.')) return;
+    const {data, error} = await sb.from('pedidos').delete().eq('estado', 'Entregado').select('id');
+    if (error) return alert('Error al eliminar el pedido: ' + error.message);
+    if (!data?.length) return alert('No se eliminaron pedidos. Verifica que sigan entregados y que tengas permiso.');
+    return vista();
+  }
   if (act === 'vis') r = await sb.from('variedades').update({visible: !cache.variedades[id].visible}).eq('id', id);
   if (act === 'stock') { const v = $('s' + id).value; r = await sb.from('presentaciones').update({stock: v === '' ? null : Math.max(0, +v)}).eq('id', id); }
   if (r?.error) return alert('Error: ' + r.error.message);
@@ -180,7 +199,7 @@ document.addEventListener('click', async e => {
 document.addEventListener('change', async e => {
   const s = e.target.closest('select[data-act="estado"]'); if (!s) return;
   const {error} = await sb.from('pedidos').update({estado: s.value}).eq('id', s.dataset.id);
-  if (error) alert('Error: ' + error.message); else stats();
+  if (error) alert('Error: ' + error.message); else { s.className = `estado-select estado-${claseEstado(s.value)}`; stats(); if (s.value === 'Entregado') vista(); }
 });
 function mostrar(ok) { $('login').classList.toggle('oculto', ok); $('panel').classList.toggle('oculto', !ok); $('btnSalir').classList.toggle('oculto', !ok); if (ok) vista(); }
 $('formLogin').addEventListener('submit', async e => {
@@ -195,16 +214,18 @@ sb.auth.getSession().then(({data}) => mostrar(!!data.session));
 $('btnCropCancel').onclick = () => {
   $("modalCrop").classList.add("oculto");
   $("formulario").querySelector("input[type=\"file\"]").value = "";
+  photoQueue = []; if (cropper) { cropper.destroy(); cropper = null; }
 };
 $('btnCropRotate').onclick = () => cropper.rotate(90);
 $("btnCropConfirm").onclick = () => {
-  const canvas = cropper.getCroppedCanvas({ width: 1000, height: 1000 });
+  const canvas = cropper.getCroppedCanvas({ width: 1600, height: 1920, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
   canvas.toBlob(blob => {
-    const file = new File([blob], "recorte.jpg", { type: "image/jpeg" });
-    const dt = new DataTransfer(); dt.items.add(file);
-    $("formulario").querySelector("input[type=\"file\"]").files = dt.files;
+    pendingPhotos.push(new File([blob], `foto-${Date.now()}-${pendingPhotos.length + 1}.jpg`, { type: "image/jpeg" }));
     $("modalCrop").classList.add("oculto");
-  }, "image/jpeg", 0.82);
+    const preview = $('fotosPendientes'); if (preview) preview.innerHTML = pendingPhotos.map((f, i) => `<img src="${URL.createObjectURL(f)}" alt="Foto nueva ${i + 1}">`).join('');
+    if (cropper) { cropper.destroy(); cropper = null; }
+    abrirSiguienteRecorte();
+  }, "image/jpeg", 0.88);
 };
 
 document.addEventListener('click', e => {
