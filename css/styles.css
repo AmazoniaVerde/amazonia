@@ -643,6 +643,31 @@ hr {
 .detail-thumb:hover, .detail-thumb.active { border-color: var(--primary-green); }
 .detail-thumb:focus-visible { outline: 3px solid #b8e2c6; outline-offset: 2px; }
 
+.plant-description {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+  border: 1px solid var(--line-color);
+  border-radius: var(--radius-md);
+  background: #fff;
+  overflow: hidden;
+}
+
+.plant-description summary {
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid var(--primary-green);
+  color: var(--primary-green);
+  font-size: 1.35rem;
+  font-weight: 700;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.plant-description-body { padding: 1.1rem 1.25rem 1.35rem; line-height: 1.65; }
+.plant-description-body p { margin: 0 0 1rem; }
+.plant-description-body p:last-child { margin-bottom: 0; }
+.plant-description-body ul { margin: .4rem 0 1rem; padding-left: 1.6rem; }
+.plant-description-body li { padding: .12rem 0; }
+
 .detail-info h1 {
   font-size: 3.5rem;
   color: var(--primary-green);

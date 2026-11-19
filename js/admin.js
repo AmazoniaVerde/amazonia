@@ -12,13 +12,13 @@ let editId = null, cur = {}, cache = {}, PRES = {}, cropper = null, photoQueue =
 const FORMS = {
   categorias: [['nombre','Nombre','text',1],['descripcion','Descripción','textarea']],
   tipos: [['nombre','Nombre de la familia','text',1],['descripcion','Descripción','textarea']],
-  variedades: [['tipo_id','Categoría › Familia','select',1],['nombre','Nombre de la planta','text',1],['descripcion','Descripción','textarea'],['luz','Luz','text'],['riego','Riego','text'],['altura','Altura','text'],['dificultad','Dificultad','dif'],['visible','Visible en la tienda (desmarca = solo admin)','check'],['destacado','Más vendida (aparece en el inicio)','check']]
+  variedades: [['tipo_id','Categoría › Familia','select',1],['nombre','Nombre de la planta','text',1],['descripcion','Descripción breve','textarea'],['descripcion_larga','Descripción detallada (aparece en Ver tamaños)','textarea'],['luz','Luz','text'],['riego','Riego','text'],['altura','Altura','text'],['dificultad','Dificultad','dif'],['visible','Visible en la tienda (desmarca = solo admin)','check'],['destacado','Más vendida (aparece en el inicio)','check']]
 };
 const get = async (t, f = q => q) => { const r = await f(sb.from(t).select('*')); if (r.error) throw r.error; return r.data; };
 
 function campo([k, l, t, req], v, o) {
   const val = v[k] ?? '';
-  if (t === 'textarea') return `<label>${l}<textarea name="${k}" rows="2">${esc(val)}</textarea></label>`;
+  if (t === 'textarea') return `<label>${l}<textarea name="${k}" rows="${k === 'descripcion_larga' ? 8 : 2}" placeholder="${k === 'descripcion_larga' ? 'Separa los párrafos con una línea en blanco. Usa **texto** para negrita y ✓ al inicio para una lista.' : ''}">${esc(val)}</textarea></label>`;
   if (t === 'select') return `<label>${l}<select name="${k}" required>${o.tipos.map(x => `<option value="${x.id}" ${x.id == val ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('')}</select></label>`;
   if (t === 'dif') return `<label>${l}<select name="${k}">${['Fácil','Media','Avanzada'].map(x => `<option ${x == (val || 'Media') ? 'selected' : ''}>${x}</option>`).join('')}</select></label>`;
   if (t === 'check') return `<label class="check"><input type="checkbox" name="${k}" ${('id' in v ? val : k === 'visible') ? 'checked' : ''}> ${l}</label>`;
@@ -150,7 +150,7 @@ $('formulario').addEventListener('submit', async e => {
   const fd = new FormData($('formulario')), msg = $('msgForm'), o = {...cur.extra};
   msg.textContent = 'Guardando…';
   try {
-    for (const [k,, t] of FORMS[cur.tbl]) o[k] = t === 'check' ? fd.has(k) : k === 'tipo_id' ? Number(fd.get(k) || 0) : (fd.get(k) || '').trim() || null;
+    for (const [k,, t] of FORMS[cur.tbl]) o[k] = t === 'check' ? fd.has(k) : k === 'tipo_id' ? Number(fd.get(k) || 0) : (fd.get(k) || '').trim() || (k === 'descripcion_larga' ? '' : null);
     if (pendingPhotos.length) {
       msg.textContent = 'Subiendo fotos…';
       const nuevas = await Promise.all(pendingPhotos.map(subir));
