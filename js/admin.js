@@ -239,7 +239,12 @@ document.addEventListener('change', async e => {
   const {error} = await sb.from('pedidos').update({estado: s.value}).eq('id', s.dataset.id);
   if (error) alert('Error: ' + error.message); else { s.className = `estado-select estado-${claseEstado(s.value)}`; stats(); if (s.value === 'Entregado') vista(); }
 });
-function mostrar(ok) { $('login').classList.toggle('oculto', ok); $('panel').classList.toggle('oculto', !ok); $('btnSalir').classList.toggle('oculto', !ok); if (ok) vista(); }
+function mostrar(ok) { $('login').classList.toggle('oculto', ok); $('panel').classList.toggle('oculto', !ok); $('btnSalir').classList.toggle('oculto', !ok); $('adminNavToggle').classList.toggle('oculto', !ok); if (!ok) cerrarMenuAdmin(); if (ok) vista(); }
+function cerrarMenuAdmin() { $('adminSidebar').classList.remove('mobile-open'); $('adminNavBackdrop').classList.add('oculto'); $('adminNavToggle').setAttribute('aria-expanded','false'); $('adminNavToggle').innerHTML='&#9776; <span>Men&uacute;</span>'; }
+$('adminNavToggle').addEventListener('click', () => { const open = !$('adminSidebar').classList.contains('mobile-open'); $('adminSidebar').classList.toggle('mobile-open', open); $('adminNavBackdrop').classList.toggle('oculto', !open); $('adminNavToggle').setAttribute('aria-expanded', String(open)); $('adminNavToggle').innerHTML = open ? '&#10005; <span>Cerrar</span>' : '&#9776; <span>Men&uacute;</span>'; });
+$('adminNavBackdrop').addEventListener('click', cerrarMenuAdmin);
+$('adminSidebar').querySelectorAll('nav a').forEach(a => a.addEventListener('click', cerrarMenuAdmin));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarMenuAdmin(); });
 $('formLogin').addEventListener('submit', async e => {
   e.preventDefault(); $('msgLogin').textContent = 'Entrando…';
   const {error} = await sb.auth.signInWithPassword({email: $('email').value.trim(), password: $('password').value});
