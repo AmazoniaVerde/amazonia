@@ -19,18 +19,28 @@ const get = async (t, f = q => q) => { const r = await f(sb.from(t).select('*'))
 function campo([k, l, t, req], v, o) {
   const val = v[k] ?? '';
   if (t === 'textarea') return `<label>${l}<textarea name="${k}" rows="${k === 'descripcion_larga' ? 8 : 2}" placeholder="${k === 'descripcion_larga' ? 'Separa los párrafos con una línea en blanco. Usa **texto** para negrita y ✓ al inicio para una lista.' : ''}">${esc(val)}</textarea></label>`;
-  if (t === 'select') return `<label>${l}<select name="${k}" required>${o.tipos.map(x => `<option value="${x.id}" ${x.id == val ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('')}</select></label>`;
+  if (t === 'select') {
+    const grupos = Object.groupBy ? Object.groupBy(o.tipos || [], x => x.categoria || 'Sin categoría') : (o.tipos || []).reduce((a, x) => ((a[x.categoria || 'Sin categoría'] ||= []).push(x), a), {});
+    const opciones = Object.entries(grupos).sort(([a],[b]) => a.localeCompare(b)).map(([cat, tipos]) => `<optgroup label="${esc(cat)}">${tipos.map(x => `<option value="${x.id}" ${x.id == val ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('')}</optgroup>`).join('');
+    return `<label>${l}<select name="${k}" id="selectorFamilia" required><option value="">Elige una categoría y familia…</option>${opciones}<option value="__new">＋ Agregar otra categoría o familia</option></select></label>`;
+  }
   if (t === 'dif') return `<label>${l}<select name="${k}">${['Fácil','Media','Avanzada'].map(x => `<option ${x == (val || 'Media') ? 'selected' : ''}>${x}</option>`).join('')}</select></label>`;
   if (t === 'check') return `<label class="check"><input type="checkbox" name="${k}" ${('id' in v ? val : k === 'visible') ? 'checked' : ''}> ${l}</label>`;
   return `<label>${l}<input name="${k}" type="${t}" ${t === 'number' ? 'step="any" min="0"' : ''} value="${esc(val)}" ${req ? 'required' : ''}></label>`;
+}
+function nuevaClasificacion(opts) {
+  return `<div id="nuevaClasificacion" class="clasificacion-nueva oculto"><h4>Agregar categoría y familia</h4><p>Elige una categoría existente para añadirle una familia, o crea ambas.</p><label>Categoría existente o nueva<select id="categoriaNuevaSelect"><option value="">Seleccionar categoría existente…</option>${(opts.categorias || []).map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('')}<option value="__newcat">＋ Crear categoría nueva</option></select></label><label id="nombreCategoriaWrap" class="oculto">Nombre de la categoría nueva<input id="nombreCategoriaNueva" placeholder="Ej. Árboles"></label><label>Nueva familia<input id="nombreFamiliaNueva" placeholder="Ej. Mandarinas"></label></div>`;
 }
 const tamBlock = v => `<div class="tam-box"><h4>Tamaños y precios <small>(precio vacío = «Pronto» · stock vacío = sin límite)</small></h4>${TAM.map((n, i) => { const r = (PRES[v.id] || []).find(x => x.tamano === n) || {}; return `<div class="tam-row"><b>${n}</b><input name="precio_${i}" type="number" step="any" min="0" placeholder="Precio (Pronto)" value="${r.precio ?? ''}"><input name="stock_${i}" type="number" min="0" placeholder="Stock (sin límite)" value="${r.stock ?? ''}"><input name="detalle_${i}" placeholder="Nota (ej. Cormo)" value="${esc(r.detalle || '')}"></div>`; }).join('')}</div>`;
 function form(tbl, vals = {}, opts = {}, extra = {}) {
   cur = {tbl, opts, extra, vals};
   const f = $('formulario'); f.hidden = false;
-  f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}${tbl === 'variedades' ? tamBlock(vals) : ''}<label>${tbl === 'variedades' ? 'Fotos (selecciona varias; recorte 5:6, hasta 1600 × 1920 px)' : 'Foto (recorte 5:6, hasta 1600 × 1920 px)'}<input type="file" name="foto" accept="image/*" ${tbl === 'variedades' ? 'multiple' : ''}></label>${vals.imagen_url ? `<div class="foto-admin-preview">${(Array.isArray(vals.fotos)&&vals.fotos.length?vals.fotos:[vals.imagen_url]).map(url=>`<img src="${esc(url)}" alt="Foto del producto">`).join('')}</div>` : ''}<div id="fotosPendientes" class="foto-admin-preview"></div><div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
+  f.innerHTML = `<h3>${editId ? 'Editar' : 'Agregar'} registro</h3>${FORMS[tbl].map(c => campo(c, vals, opts)).join('')}${tbl === 'variedades' ? nuevaClasificacion(opts) + tamBlock(vals) : ''}<label>${tbl === 'variedades' ? 'Fotos (selecciona varias; recorte 5:6, hasta 1600 × 1920 px)' : 'Foto (recorte 5:6, hasta 1600 × 1920 px)'}<input type="file" name="foto" accept="image/*" ${tbl === 'variedades' ? 'multiple' : ''}></label>${vals.imagen_url ? `<div class="foto-admin-preview">${(Array.isArray(vals.fotos)&&vals.fotos.length?vals.fotos:[vals.imagen_url]).map(url=>`<img src="${esc(url)}" alt="Foto del producto">`).join('')}</div>` : ''}<div id="fotosPendientes" class="foto-admin-preview"></div><div class="acciones"><button type="submit">${editId ? 'Guardar cambios' : 'Agregar'}</button>${editId ? '<button type="button" class="btn-secundario" data-act="cancel">Cancelar</button>' : ''}</div><p id="msgForm" class="error"></p>`;
 
   pendingPhotos = []; photoQueue = [];
+  const selectorFamilia = $('selectorFamilia'), bloqueNuevo = $('nuevaClasificacion'), categoriaNueva = $('categoriaNuevaSelect'), nombreCategoriaWrap = $('nombreCategoriaWrap'), nombreCategoriaNueva = $('nombreCategoriaNueva'), nombreFamiliaNueva = $('nombreFamiliaNueva');
+  if (selectorFamilia) selectorFamilia.onchange = () => { const mostrar = selectorFamilia.value === '__new'; bloqueNuevo.classList.toggle('oculto', !mostrar); categoriaNueva.required = mostrar; nombreFamiliaNueva.required = mostrar; };
+  if (categoriaNueva) categoriaNueva.onchange = () => { const nuevo = categoriaNueva.value === '__newcat'; nombreCategoriaWrap.classList.toggle('oculto', !nuevo); nombreCategoriaNueva.required = nuevo; };
   const fileInput = f.querySelector('input[type="file"]');
   if (fileInput) {
     fileInput.onchange = e => {
@@ -43,7 +53,7 @@ function abrirSiguienteRecorte() {
   const reader = new FileReader(); reader.onload = e => {
     $('imgCrop').src = e.target.result; $('modalCrop').classList.remove('oculto');
     if (cropper) cropper.destroy();
-    cropper = new Cropper($('imgCrop'), { aspectRatio: 5 / 6, viewMode: 1, responsive: true, autoCropArea: 0.9 });
+    cropper = new Cropper($('imgCrop'), { aspectRatio: cur.tbl === 'categorias' ? 1 : 5 / 6, viewMode: 1, responsive: true, autoCropArea: 0.9 });
   }; reader.readAsDataURL(file);
 }
 function cab(t, a, m = '') { editId = null; $('titulo').textContent = t; $('ayuda').textContent = a; $('migas').innerHTML = m; $('formulario').hidden = true; $('lista').innerHTML = ''; }
@@ -114,12 +124,11 @@ const V = {
   async productos(tid) {
     cab('Productos', 'Cada planta con sus tamaños, precios y fotos. Las ocultas solo las ves tú.', tid ? '<a href="#productos">Todos los productos</a>' : '');
     const [cs, ts] = await Promise.all([get('categorias'), get('tipos', q => q.order('nombre'))]);
-    if (!ts.length) { $('ayuda').textContent = 'Primero crea una categoría y dentro una familia.'; return; }
     const [vs, ps] = await Promise.all([get('variedades', q => (tid ? q.eq('tipo_id', tid) : q).order('nombre')), get('presentaciones')]);
     PRES = {}; ps.forEach(p => (PRES[p.variedad_id] = PRES[p.variedad_id] || []).push(p));
     Object.values(PRES).forEach(a => a.sort((x, y) => x.orden - y.orden));
     const tn = Object.fromEntries(ts.map(t => [t.id, `${cs.find(c => c.id == t.categoria_id)?.nombre || ''} › ${t.nombre}`]));
-    form('variedades', tid ? {tipo_id: +tid} : {}, {tipos: ts.map(t => ({id: t.id, nombre: tn[t.id]}))});
+    form('variedades', tid ? {tipo_id: +tid} : {}, {categorias: cs, tipos: ts.map(t => ({id: t.id, nombre: t.nombre, categoria: cs.find(c => c.id == t.categoria_id)?.nombre || 'Sin categoría'}))});
     const nv = vs.filter(v => v.visible).length;
     $('lista').innerHTML = `<div class="barra"><input id="buscaProd" type="search" placeholder="Buscar planta o familia…"><select id="filtroProd"><option value="">Todas (${vs.length})</option><option value="vis">Visibles en la web (${nv})</option><option value="oc">Solo admin / ocultas (${vs.length - nv})</option><option value="nofoto">Sin foto (${vs.filter(v => !v.imagen_url).length})</option></select></div><div id="filas"></div>`;
     const pintar = () => {
@@ -150,7 +159,23 @@ $('formulario').addEventListener('submit', async e => {
   const fd = new FormData($('formulario')), msg = $('msgForm'), o = {...cur.extra};
   msg.textContent = 'Guardando…';
   try {
-    for (const [k,, t] of FORMS[cur.tbl]) o[k] = t === 'check' ? fd.has(k) : k === 'tipo_id' ? Number(fd.get(k) || 0) : (fd.get(k) || '').trim() || (k === 'descripcion_larga' ? '' : null);
+    for (const [k,, t] of FORMS[cur.tbl]) o[k] = t === 'check' ? fd.has(k) : k === 'tipo_id' ? (fd.get(k) === '__new' ? null : Number(fd.get(k) || 0)) : (fd.get(k) || '').trim() || (k === 'descripcion_larga' ? '' : null);
+    if (cur.tbl === 'variedades' && fd.get('tipo_id') === '__new') {
+      const familiaNombre = $('nombreFamiliaNueva').value.trim();
+      let categoriaId = $('categoriaNuevaSelect').value;
+      if (!familiaNombre) throw new Error('Escribe el nombre de la nueva familia.');
+      if (categoriaId === '__newcat') {
+        const nombre = $('nombreCategoriaNueva').value.trim();
+        if (!nombre) throw new Error('Escribe el nombre de la nueva categoría.');
+        const buscar = await sb.from('categorias').select('id').ilike('nombre', nombre).limit(1).maybeSingle(); if (buscar.error) throw buscar.error;
+        if (buscar.data) categoriaId = buscar.data.id;
+        else { const creada = await sb.from('categorias').insert({nombre}).select('id').single(); if (creada.error) throw creada.error; categoriaId = creada.data.id; }
+      }
+      if (!categoriaId) throw new Error('Selecciona o crea una categoría.');
+      const buscarFamilia = await sb.from('tipos').select('id').eq('categoria_id', categoriaId).ilike('nombre', familiaNombre).limit(1).maybeSingle(); if (buscarFamilia.error) throw buscarFamilia.error;
+      if (buscarFamilia.data) o.tipo_id = buscarFamilia.data.id;
+      else { const creada = await sb.from('tipos').insert({nombre: familiaNombre, categoria_id: categoriaId}).select('id').single(); if (creada.error) throw creada.error; o.tipo_id = creada.data.id; }
+    }
     if (pendingPhotos.length) {
       msg.textContent = 'Subiendo fotos…';
       const nuevas = await Promise.all(pendingPhotos.map(subir));
@@ -218,7 +243,8 @@ $('btnCropCancel').onclick = () => {
 };
 $('btnCropRotate').onclick = () => cropper.rotate(90);
 $("btnCropConfirm").onclick = () => {
-  const canvas = cropper.getCroppedCanvas({ width: 1600, height: 1920, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
+  const lado = cur.tbl === 'categorias';
+  const canvas = cropper.getCroppedCanvas({ width: 1600, height: lado ? 1600 : 1920, imageSmoothingEnabled: true, imageSmoothingQuality: 'high' });
   canvas.toBlob(blob => {
     pendingPhotos.push(new File([blob], `foto-${Date.now()}-${pendingPhotos.length + 1}.jpg`, { type: "image/jpeg" }));
     $("modalCrop").classList.add("oculto");
